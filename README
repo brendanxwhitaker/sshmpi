@@ -1,0 +1,20 @@
++-----+
+|pipes|
++-----+
+
+A C++ application for parallel computing over pure SSH.
+
+Abstract
+========
+
+This program will mainly be used via pybind11. The idea is that we expose two python objects, ``Process`` and ``Pipe``, which can be instantiated from a python program.
+
+class Process:
+    def __init__(self, target: Callable[[Any,...], Any], *args: Tuple[Any, ...], **kwargs: Dict[str, Any]) -> None:
+        pass
+
+This is analogous to ``mp.Process`` from ``multiprocessing``. Usage is that we first write a ``nodes.json`` file with the SSH credentials of all nodes, and set up passwordless SSH between all nodes. Then, at the beginning of our parallel program, we call ``pipes.init()`` which will initialize connections to all nodes in ``nodes.json``. This requires that ``pipes`` is installed on all machines. Initialization will run a program on all remote nodes via SSH, which continuously reads stdin from the caller. The head node's instance of pipes will be able to send arbitrary data through the connection into the spout program. The spout program will then communicate with a remote instance of pipes.
+
+So when we call init(), a pipes background process is started on all remote nodes, which is continuously being fed data from the head node. Then when we instantiate and start a ``Process``, the data from the instance is serialized and sent over the existing SSH connection to the remote background processes.
+
+How would we do this in pure python? We would pickle the entire function as well as all its arguments, send this over SSH, and then unpickle it and run it. So we want to be able to call a C++ function imported from pipes via pybind11. The pybind11 python API will pickle all the python stuff, and then send it. The pipes C++ program being called from within the python code is precompiled, as is the C++ program running in the background on the remote host. All the background process does is receive serialized in-memory C++ objects. This could be a C++ function object, or a specialized C++ function object which can then call an arbitrary python function, as well as the data to go with it.
