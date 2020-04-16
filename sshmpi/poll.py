@@ -1,10 +1,18 @@
+""" Functions for initializing client connections. """
 import time
-import pickle
+import asyncio
 from pssh.clients import ParallelSSHClient
 from pssh.utils import read_openssh_config
+from tcp_listener import listen
 
 
 def init():
+    """ Public-facing API for SSHMPI initialization. """
+    asyncio.run(_init())
+
+
+async def _init():
+    """ Internal async SSHMPI initialization function. """
     # Define private key path and hostnames.
     # TODO: Read config.
     pkey = ".ssh/id_rsa"
@@ -15,6 +23,9 @@ def init():
     for hostname in hosts:
         _, _, port, _ = read_openssh_config(hostname)
         config[hostname] = {"port": port}
+
+    # Start TCP listener for return connections.
+    await listen()
 
     # Instantiate parallel SSH connections.
     client = ParallelSSHClient(hosts, host_config=config, pkey=pkey)
@@ -25,13 +36,13 @@ def init():
 
 # Pickle a sample function.
 def useless():
+    """ Function to be pickled. """
     print("Hello there!")
 
 
 def test_init():
     """ Test speed of SSH client stdin against a benchmark. """
     # Define private key path and hostnames.
-    # TODO: Read config.
     pkey = ".ssh/id_rsa"
     hosts = ["cc-16", "cc-17", "cc-18", "cc-19", "cc-20"]
 
@@ -43,7 +54,7 @@ def test_init():
 
     # Instantiate parallel SSH connections.
     client = ParallelSSHClient(hosts, host_config=config, pkey=pkey)
-    message = pickle.dumps(useless)
+    # message = pickle.dumps(useless)
 
     # Run ``benchmark.c``, which reads continuously from stdin, and measures the
     # time between writes delimited by newlines.

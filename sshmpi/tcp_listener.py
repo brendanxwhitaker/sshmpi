@@ -1,7 +1,9 @@
+""" A simple TCP server listener. """
 import asyncio
 
 
 async def handle_echo(reader, writer):
+    """ Echoes any data sent to the server back to the sender. """
     data = await reader.read(100)
     message = data.decode()
     addr = writer.get_extra_info("peername")
@@ -16,7 +18,8 @@ async def handle_echo(reader, writer):
     writer.close()
 
 
-async def main():
+async def listen():
+    """ Runs a persistent server. """
     server = await asyncio.start_server(handle_echo, "127.0.0.1", 8888)
 
     addr = server.sockets[0].getsockname()
@@ -26,4 +29,4 @@ async def main():
         await server.serve_forever()
 
 
-asyncio.run(main())
+asyncio.run(listen())

@@ -1,9 +1,13 @@
-import pickle
+""" Class for distributed processes. """
 from typing import Callable, Any, Tuple, Dict
-from local import get_parcel
+from sshmpi.local import get_parcel
+
+# pylint: disable=too-few-public-methods
 
 
 class Process:
+    """ Called with a function and arguments to run on remote nodes. """
+
     def __init__(
         self,
         target: Callable[[Any, ...], Any],
@@ -15,7 +19,7 @@ class Process:
         self.kwargs = kwargs
 
     def start(self, output) -> None:
-
+        """ Broadcast the ``Process`` to remote nodes. """
         # Pickle the ``Process`` object.
         parcel = get_parcel(self)
 
