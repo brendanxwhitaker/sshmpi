@@ -8,7 +8,8 @@ from tcp_listener import listen
 
 def init():
     """ Public-facing API for SSHMPI initialization. """
-    asyncio.run(_init())
+    output = asyncio.run(_init())
+    return output
 
 
 async def _init():
