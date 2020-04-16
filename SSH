@@ -1,0 +1,8 @@
+ping 0.tcp.ngrok.io - get IP address.
+
+Add line to ``/etc/hosts``:
+```
+<IP_ADDRESS> cc-1 cc-2 cc-3 ...
+```
+
+Then create a ParallelSSHClient with each of the aliased hostnames ["cc-1", ...] and with different ports, all passed through via ``host_config`` argument in parallel-ssh.
