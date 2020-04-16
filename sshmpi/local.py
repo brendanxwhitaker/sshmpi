@@ -1,3 +1,4 @@
+""" Proof-of-concept for async subprocess byte streams. """
 import sys
 import pickle
 import asyncio
@@ -5,6 +6,7 @@ import numpy as np
 
 
 async def write(stdin):
+    """ Sample writes to a stream. """
     for _ in range(10):
         arr = np.random.rand(10)
         print("Size of array:", sys.getsizeof(arr))
@@ -16,17 +18,19 @@ async def write(stdin):
 
 
 async def read(stdout):
-    nl = "\n".encode("ascii")
+    """ Sample reading from a stream. """
+    bnewline = "\n".encode("ascii")
     buf = b""
     while 1:
         buf += await stdout.read(1)
-        if buf.endswith(nl):
+        if buf.endswith(bnewline):
             print("OUT:", buf.decode("ascii"), end="")
             buf = b""
         await asyncio.sleep(0.0001)
 
 
 async def err(stderr):
+    """ Display stderr from stream after termination. """
     while 1:
         buf = await stderr.read()
         if buf:
@@ -53,6 +57,7 @@ def get_parcel(obj: object) -> bytes:
 
 
 async def run():
+    """ Run the example. """
     p = await asyncio.create_subprocess_shell(
         "python3 spout.py",
         stdin=asyncio.subprocess.PIPE,

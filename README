@@ -1,6 +1,6 @@
-+-----+
-|pipes|
-+-----+
++------+
+|sshmpi|
++------+
 
 A C++ application for parallel computing over pure SSH.
 
