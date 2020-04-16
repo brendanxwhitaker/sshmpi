@@ -1,23 +1,31 @@
 """ Functions for initializing client connections. """
+import os
+import sys
 import time
 import asyncio
+import multiprocessing as mp
+from typing import List
+
 from pssh.clients import ParallelSSHClient
 from pssh.utils import read_openssh_config
-from tcp_listener import listen
+from sshmpi.tcp_listener import listen
+from sshmpi.utils import get_available_hostnames_from_sshconfig
 
 
 def init():
     """ Public-facing API for SSHMPI initialization. """
-    output = asyncio.run(_init())
-    return output
-
-
-async def _init():
-    """ Internal async SSHMPI initialization function. """
     # Define private key path and hostnames.
-    # TODO: Read config.
-    pkey = ".ssh/id_rsa"
-    hosts = ["cc-16", "cc-17", "cc-18", "cc-19", "cc-20"]
+    pkey = os.path.expanduser("~/.ssh/id_rsa")
+
+    # TODO: Make this the default.
+    if 0:
+        nodes_path = os.path.expanduser("~/nodes.json")
+        with open(nodes_path, "r") as nodes_file:
+            lines = nodes_file.read().split("\n")
+            print(lines)
+
+    hosts = get_available_hostnames_from_sshconfig()
+    print("Hosts:", hosts)
 
     # Per-host config dictionaries.
     config = {}
@@ -25,12 +33,12 @@ async def _init():
         _, _, port, _ = read_openssh_config(hostname)
         config[hostname] = {"port": port}
 
-    # Start TCP listener for return connections.
-    await listen()
-
-    # Instantiate parallel SSH connections.
     client = ParallelSSHClient(hosts, host_config=config, pkey=pkey)
     output = client.run_command("./spout")
+    print("Finished initialization.")
+
+    funnel, spout = mp.Pipe()
+    listener = mp.Process(target=listen, args=(funnel,))
 
     return output
 

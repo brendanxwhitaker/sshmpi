@@ -1,5 +1,7 @@
 """ A simple TCP server listener. """
+import socket
 import asyncio
+from multiprocessing.connection import Connection
 
 
 async def handle_echo(reader, writer):
@@ -18,7 +20,7 @@ async def handle_echo(reader, writer):
     writer.close()
 
 
-async def listen():
+async def listen(funnel: Connection):
     """ Runs a persistent server. """
     server = await asyncio.start_server(handle_echo, "127.0.0.1", 8888)
 
@@ -29,4 +31,5 @@ async def listen():
         await server.serve_forever()
 
 
-asyncio.run(listen())
+if __name__ == "__main__":
+    asyncio.run(listen())

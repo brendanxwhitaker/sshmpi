@@ -1,2 +1,3 @@
+paramiko
 parallel-ssh
 numpy
