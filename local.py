@@ -8,8 +8,7 @@ async def write(stdin):
     for _ in range(10):
         arr = np.random.rand(10)
         print("Size of array:", sys.getsizeof(arr))
-        message = pickle.dumps(arr)
-        pair = get_length_bytes(message) + message
+        pair = get_parcel(arr)
 
         # Consider buffering the output so we aren't dumping a huge line over SSH.
         stdin.write(pair + "\n".encode("ascii"))
@@ -26,6 +25,7 @@ async def read(stdout):
             buf = b""
         await asyncio.sleep(0.0001)
 
+
 async def err(stderr):
     while 1:
         buf = await stderr.read()
@@ -34,13 +34,22 @@ async def err(stderr):
         await asyncio.sleep(0.5)
 
 
-def get_length_bytes(message: bytes) -> bytes:
-    """ Gets a bytes representation of the length of ``message`` in bytes. """
+def get_parcel(obj: object) -> bytes:
+    """ Pickles an object and returns bytes of a length+message pair. """
+    message = pickle.dumps(obj)
+
+    # Get representation of then length of ``message`` in bytes.
     length = str(len(message)).encode("ascii")
     assert len(length) <= 16
+
+    # Compute the pad so that prefix is a 16-byte sequence.
     padsize = 16 - len(length)
     pad = ("0" * padsize).encode("ascii")
-    return pad + length
+
+    # Concatenate prefix and message.
+    parcel = pad + length + message
+
+    return parcel
 
 
 async def run():
@@ -52,6 +61,7 @@ async def run():
     )
 
     await asyncio.gather(write(p.stdin), read(p.stdout), err(p.stderr))
+
 
 if __name__ == "__main__":
     asyncio.run(run())

@@ -1,6 +1,7 @@
 import os
 import sys
 import pickle
+import argparse
 
 k = 0
 nl = "\n".encode("ascii")
@@ -24,3 +25,12 @@ try:
 except KeyboardInterrupt:
     sys.stdout.flush()
 print(k)
+
+def main(args: argparse.Namespace) -> None:
+    """ Makes a backward connection to head node and reads from stdin. """
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--hostname", type=str)
+    args = parser.parse_args()
+    main(args)
