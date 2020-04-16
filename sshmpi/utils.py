@@ -28,7 +28,7 @@ def get_available_hostnames_from_sshconfig(config_file: str = "") -> List[str]:
     # Load ~/.ssh/config if it exists to pick up username
     # and host address if set
     if not os.path.isfile(_ssh_config_file):
-        return
+        return []
 
     # Read hostnames from paramiko config object.
     ssh_config = SSHConfig()
