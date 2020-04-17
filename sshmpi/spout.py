@@ -4,6 +4,7 @@ import os
 import sys
 import pickle
 import asyncio
+import logging
 import argparse
 import multiprocessing as mp
 from multiprocessing.connection import Connection
@@ -15,8 +16,6 @@ from pssh.utils import read_openssh_config
 from pssh.clients import ParallelSSHClient
 from sshmpi.local import get_parcel
 
-
-import logging
 
 logging.basicConfig(filename="remote.log", level=logging.DEBUG)
 
