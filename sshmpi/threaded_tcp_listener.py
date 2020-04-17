@@ -52,7 +52,9 @@ class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
         super().__init__(*args, **kwargs)
 
 
-def listener(funnel: Connection, kill_spout: Connection) -> int:
+def listener(
+    funnel: Connection, kill_spout: Connection, done_funnel: Connection
+) -> int:
     """ Waits for data and pipes it to HNP via a ThreadedTCPServer. """
     host, port = "127.0.0.1", 8888
     # pylint: disable=broad-except
@@ -72,6 +74,7 @@ def listener(funnel: Connection, kill_spout: Connection) -> int:
             signal = kill_spout.recv()
             if signal == "SIGKILL":
                 server.shutdown()
+                done_funnel.send("DONE")
 
     except Exception as err:
         server.shutdown()
