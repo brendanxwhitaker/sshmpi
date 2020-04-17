@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """ Called by HNP on remote nodes via SSH. Calls all remote ``Process`` functions. """
 import sys
 import pickle
