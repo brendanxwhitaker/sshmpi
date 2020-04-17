@@ -15,14 +15,13 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
         buf = b""
         while 1:
             # Read the length of the message given in 16 bytes.
-            logging.info("SERVER: Waiting for length bytes.")
             cur_thread = threading.current_thread()
             buf += self.request.recv(16)
+            t = time.time()
 
             # Parse the message length bytes.
             blength = buf
             length = int(blength.decode("ascii"))
-            logging.info("SERVER: %s: Decoded length: %d", cur_thread.name, length)
 
             # Read the message proper.
             buf = self.request.recv(length + 1)
@@ -30,7 +29,8 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
             # Deserialize the data and send to the backward connection client.
             obj = pickle.loads(buf)
             self.server.funnel.send(obj)
-            logging.info("SERVER: %s: Object sent: %s", cur_thread.name, str(obj))
+            logging.info("SERVER: Unpickling time: %fs", time.time() - t)
+            logging.info("SERVER: Received %s from remote %f", str(obj), time.time())
 
             # Reset buffer.
             buf = b""
@@ -57,7 +57,9 @@ def listener(funnel: Connection) -> None:
     host, port = "127.0.0.1", 8888
     # pylint: disable=broad-except
     try:
-        server = ThreadedTCPServer((host, port), ThreadedTCPRequestHandler, funnel=funnel)
+        server = ThreadedTCPServer(
+            (host, port), ThreadedTCPRequestHandler, funnel=funnel
+        )
         with server:
             ip, port = server.server_address
 
