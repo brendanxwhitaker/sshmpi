@@ -5,26 +5,8 @@ import socket
 import asyncio
 import logging
 
-BUFFER_SIZE = 1024
-
 logging.basicConfig(filename="client-head.log", level=logging.DEBUG)
-
-
-async def spout():
-    """ Continously reads bytes from stdout and forwards them to SSHMPI HNP. """
-    _, writer = await asyncio.open_connection("127.0.0.1", 8888)
-    logging.info("Successfully connected to server.")
-    try:
-        buf = b""
-        while 1:
-            buf = sys.stdin.buffer.read(BUFFER_SIZE)
-            logging.info("Sending: %s", buf.decode())
-            writer.write(buf)
-
-    except KeyboardInterrupt:
-        writer.close()
-        sys.stdout.flush()
-
+logging.disable(logging.CRITICAL)
 
 async def stdin_read():
     """ A version of the above function which explicitly reads the length bytes. """
@@ -37,7 +19,6 @@ async def stdin_read():
         buf = b""
         while 1:
             logging.info("Reading from stdin.")
-            sys.stdout.flush()
             # Read the length of the message given in 16 bytes.
             buf += sys.stdin.buffer.read(16)
 
@@ -45,7 +26,6 @@ async def stdin_read():
             blength = buf
             length = int(blength.decode("ascii"))
             logging.info("Decoded length: %d", length)
-            sys.stdout.flush()
             sock.sendall(buf)
 
             # Read the message proper.
