@@ -14,18 +14,22 @@ from ssh2.channel import Channel
 from sshmpi.local import get_parcel
 
 
+import logging
+logging.basicConfig(filename="remote.log", level=logging.DEBUG)
+
+
 async def stdin_read(funnel: Connection) -> None:
     """ Continously reads parcels (length-message) pairs from stdin. """
     try:
         buf = b""
         while 1:
-            print("Reading from stdin.")
+            logging.info("Reading from stdin.")
             sys.stdout.flush()
             # Read the length of the message given in 16 bytes.
             buf += sys.stdin.buffer.read(16)
             blength = buf
             length = int(blength.decode("ascii"))
-            print("Decoded length:", length)
+            logging.info("Decoded length:", length)
             sys.stdout.flush()
 
             # Read the message proper.

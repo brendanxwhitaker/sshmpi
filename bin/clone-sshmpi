@@ -1,5 +1,5 @@
-#!/bin/sh
-nodes=(0 22 23 24 25)
+#!/bin/bash
+nodes=(0 21 22 23 24 25)
 for node in "${nodes[@]}"
 do
     scp ~/.ssh/config cc-$node:~/.ssh/config
