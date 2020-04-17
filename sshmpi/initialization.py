@@ -83,7 +83,8 @@ def test_single_connection(host: str, config: dict, pkey: str) -> float:
             logging.info("Sent packet through first pipe at %f", time.time())
             latency = time.time() - t
             print("Finished round %d in %fs" % (i, latency))
-            latencies.append(latency)
+            if i > 0:
+                latencies.append(latency)
             t = time.time()
             i += 1
             j = 0
@@ -120,7 +121,6 @@ def init():
     host_args = [(localhost, (i + 1) * init_delay) for i in range(len(hosts))]
     output = client.run_command("spout --hostname %s --rank %d", host_args=host_args)
     stdins = [out.stdin for out in output.values()]
-    print("Finished initialization.")
 
     # Bytes coming out of ``in_spout`` are from a remote host.
     in_funnel, in_spout = mp.Pipe()
@@ -138,8 +138,6 @@ def init():
     data = "Initialized."
     out_funnel.send(data)
     t = time.time()
-
-    print("Sent data through funnel.")
 
     j = 0
     i = 0

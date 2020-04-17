@@ -69,7 +69,7 @@ def listener(funnel: Connection, kill_spout: Connection) -> None:
             # Exit the server thread when the main thread terminates
             server_thread.daemon = True
             server_thread.start()
-            print("Server loop running in thread:", server_thread.name)
+            print("Started server loop in:", server_thread.name)
 
             signal = kill_spout.recv()
             if signal == "SIGKILL":
