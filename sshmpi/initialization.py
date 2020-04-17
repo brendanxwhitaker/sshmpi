@@ -69,7 +69,7 @@ def test_single_connection(host: str, config: dict, pkey: str) -> float:
     latencies: List[float] = []
     j = 0
     i = 0
-    while i < 100:
+    while i < 10:
         reply = in_spout.recv()
         logging.info("RETURN: Received reply %s at %f", str(reply), time.time())
         if sentinel in reply:
@@ -89,6 +89,11 @@ def test_single_connection(host: str, config: dict, pkey: str) -> float:
             j = 0
     mean = sum(latencies) / len(latencies)
     kill_funnel.send("SIGKILL")
+
+    p_in.terminate()
+    p_in.join()
+    p_out.terminate()
+    p_out.join()
     return mean
 
 
