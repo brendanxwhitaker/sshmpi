@@ -8,24 +8,28 @@ import logging
 logging.basicConfig(filename="headspout.log", level=logging.DEBUG)
 
 
-async def stdin_read():
-    """ A version of the above function which explicitly reads the length bytes. """
+async def stdin_read() -> None:
+    """ Reads bytes from remote workers and sends them to head node server. """
     ip = "127.0.0.1"
     port = 8888
     logging.info("Attempting to open connection to server.")
+
+    # Create a socket.
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+
+        # Connect to the head node's server with the socket.
         sock.connect((ip, port))
         logging.info("Successfully connected to server.")
+
+        # Continously read bytes from stdin.
         buf = b""
         while 1:
-            logging.info("Reading from stdin.")
             # Read the length of the message given in 16 bytes.
             buf += sys.stdin.buffer.read(16)
 
             # Parse the message length bytes.
             blength = buf
             length = int(blength.decode("ascii"))
-            logging.info("Decoded length: %d", length)
             sock.sendall(buf)
 
             # Read the message proper.

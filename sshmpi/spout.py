@@ -16,7 +16,7 @@ from ssh2.channel import Channel  # pylint: disable=no-name-in-module
 
 from pssh.utils import read_openssh_config
 from pssh.clients import ParallelSSHClient
-from sshmpi.local import get_parcel
+from sshmpi.parcel import get_parcel
 
 logging.basicConfig(filename="spout.log", level=logging.DEBUG)
 
@@ -48,7 +48,7 @@ def stdin_read(funnel: Connection) -> None:
         buf = b""
 
 
-def write_from_pipe(spout: Connection, stream):
+def write_from_pipe(spout: Connection, stream) -> None:
     """ Writes from a pipe connection to a stream. """
     while 1:
         data = spout.recv()
@@ -60,7 +60,9 @@ def write_from_pipe(spout: Connection, stream):
         logging.info("REMOTE: Wrote %s back to head at %f", str(data), time.time())
 
 
-async def multistream_write_from_pipe(spout: Connection, streams: List[Channel]):
+async def multistream_write_from_pipe(
+    spout: Connection, streams: List[Channel]
+) -> None:
     """ Writes from a pipe connection to a list of SSH streams. """
     while 1:
         data = spout.recv()
@@ -69,18 +71,11 @@ async def multistream_write_from_pipe(spout: Connection, streams: List[Channel])
         # Consider buffering the output so we aren't dumping a huge line over SSH.
         for stream in streams:
             stream.write(pair + "\n".encode("ascii"))
-        logging.info("Finished multistream write at %f." % time.time())
+        logging.info("Finished multistream write at %f.", time.time())
 
 
-def from_head(funnel: Connection) -> None:
-    asyncio.run(stdin_read(funnel))
-
-
-def to_head(spout: Connection, stream):
-    asyncio.run(write_from_pipe(spout, stream))
-
-
-def multistream_to_head(spout: Connection, streams: list):
+def multistream_to_head(spout: Connection, streams: list) -> None:
+    """ Asynchronously write to remote workers from ``spout``. """
     asyncio.run(multistream_write_from_pipe(spout, streams))
 
 
