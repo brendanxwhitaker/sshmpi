@@ -5,6 +5,7 @@ import functools
 from typing import List
 from paramiko import SSHConfig
 
+# pylint: disable=too-few-public-methods
 
 def get_available_hostnames_from_sshconfig(config_file: str = "") -> List[str]:
     """
