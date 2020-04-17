@@ -52,11 +52,12 @@ async def write_from_pipe(spout: Connection, stream):
     """ Writes from a pipe connection to a stream. """
     while 1:
         data = spout.recv()
-        print("Size of packet:", sys.getsizeof(data))
+        logging.info("Size of packet: %s", str(sys.getsizeof(data)))
         pair = get_parcel(data)
 
         # Consider buffering the output so we aren't dumping a huge line over SSH.
         stream.write(pair + "\n".encode("ascii"))
+        logging.info("Wrote to stream.")
         await stream.drain()
 
 
