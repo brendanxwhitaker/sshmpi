@@ -71,7 +71,7 @@ setup(
     long_description="",
     long_description_content_type="text/plain",
     install_requires=["numpy", "parallel-ssh", "paramiko"],
-    scripts=["bin/spout", "bin/clone-sshmpi", "bin/headspout"],
+    scripts=["bin/spout", "bin/clone-sshmpi", "bin/headspout", "bin/update_hostsfile"],
     package_data={"sshmpi": []},
     include_package_data=True,
     python_requires=">=3.7.0",
