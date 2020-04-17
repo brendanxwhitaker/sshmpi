@@ -113,7 +113,9 @@ def main() -> None:
     if args.hostname:
         pkey = os.path.expanduser("~/.ssh/id_rsa")
         _, _, port, _ = read_openssh_config(args.hostname)
+        logging.info("Sleeping: %ds", args.rank * 20)
         time.sleep(args.rank * 20)
+        logging.info("Instantiating client.")
         client = ParallelSSHClient([args.hostname], port=port, pkey=pkey)
         output = client.run_command("headspout")
 
