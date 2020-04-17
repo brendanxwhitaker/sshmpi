@@ -19,7 +19,7 @@ from pssh.utils import read_openssh_config
 from pssh.clients import ParallelSSHClient
 from sshmpi.local import get_parcel
 
-logging.basicConfig(filename="remote.log", level=logging.DEBUG)
+logging.basicConfig(filename="spout.log", level=logging.DEBUG)
 
 def stdin_read(funnel: Connection) -> None:
     """ Continously reads parcels (length-message) pairs from stdin. """
@@ -57,19 +57,18 @@ def write_from_pipe(spout: Connection, stream):
         # Consider buffering the output so we aren't dumping a huge line over SSH.
         stream.write(pair + "\n".encode("ascii"))
         logging.info("Wrote to stream.")
-        # await stream.drain()
 
 
 async def multistream_write_from_pipe(spout: Connection, streams: List[Channel]):
     """ Writes from a pipe connection to a list of SSH streams. """
     while 1:
         data = spout.recv()
-        print("Size of packet:", sys.getsizeof(data))
         pair = get_parcel(data)
 
         # Consider buffering the output so we aren't dumping a huge line over SSH.
         for stream in streams:
             stream.write(pair + "\n".encode("ascii"))
+        logging.info("Finished multistream write at %f." % time.time())
 
 
 def from_head(funnel: Connection) -> None:

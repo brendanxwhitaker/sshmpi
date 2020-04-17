@@ -5,7 +5,7 @@ import socket
 import asyncio
 import logging
 
-logging.basicConfig(filename="client-head.log", level=logging.DEBUG)
+logging.basicConfig(filename="headspout.log", level=logging.DEBUG)
 
 async def stdin_read():
     """ A version of the above function which explicitly reads the length bytes. """

@@ -2,6 +2,7 @@
 import os
 import time
 import socket
+import logging
 import multiprocessing as mp
 from typing import List
 
@@ -76,6 +77,7 @@ def init():
         if j == len(hosts):
             data = "Packet |%d|" % i
             out_funnel.send("Packet |%d|" % i)
+            logging.info("Sent packet through first pipe at %f" % time.time())
             print("Finished round %d in %fs" % (i, time.time() - t))
             t = time.time()
             i += 1
