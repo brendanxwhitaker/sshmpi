@@ -3,6 +3,7 @@
 import os
 import sys
 import pickle
+import socket
 import asyncio
 import logging
 import argparse
@@ -88,6 +89,8 @@ def target(in_spout: Connection, out_funnel: Connection) -> None:
     while 1:
         data = in_spout.recv()
         logging.info("Received data from in_spout: %s" % str(data))
+        local = socket.gethostname()
+        out_funnel.send(local)
         out_funnel.send(data)
 
 
