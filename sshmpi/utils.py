@@ -18,7 +18,7 @@ def get_available_hostnames_from_sshconfig(config_file: str = "") -> List[str]:
 
     Returns
     -------
-    hosts : ``List[str]``.
+    hostnames : ``List[str]``.
         Found hostnames.
     """
     _ssh_config_file = (
@@ -42,6 +42,7 @@ def get_available_hostnames_from_sshconfig(config_file: str = "") -> List[str]:
     # Remove localhost.
     local = socket.gethostname()
     hostnames.remove(local)
+    hostnames = sorted(hostnames)
 
     return hostnames
 

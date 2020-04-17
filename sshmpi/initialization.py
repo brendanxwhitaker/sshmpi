@@ -69,6 +69,7 @@ def init():
     i = 0
     while 1:
         reply = in_spout.recv()
+        logging.info("RETURN: Received reply %s at %f", str(reply), time.time())
         if sentinel in reply:
             print(reply)
         if data in reply:

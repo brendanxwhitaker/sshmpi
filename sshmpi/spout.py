@@ -3,7 +3,6 @@
 import os
 import sys
 import time
-import random
 import pickle
 import socket
 import asyncio
@@ -20,6 +19,7 @@ from pssh.clients import ParallelSSHClient
 from sshmpi.local import get_parcel
 
 logging.basicConfig(filename="spout.log", level=logging.DEBUG)
+
 
 def stdin_read(funnel: Connection) -> None:
     """ Continously reads parcels (length-message) pairs from stdin. """

@@ -7,6 +7,7 @@ import logging
 
 logging.basicConfig(filename="headspout.log", level=logging.DEBUG)
 
+
 async def stdin_read():
     """ A version of the above function which explicitly reads the length bytes. """
     ip = "127.0.0.1"
