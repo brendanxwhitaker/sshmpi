@@ -61,6 +61,17 @@ def init():
 
     print("Sent data through funnel.")
 
+    j = 0
+    i = 0
     while 1:
         reply = in_spout.recv()
         print("RE:", reply)
+        if reply == data:
+            j += 1
+
+        if j == len(hosts):
+            data = "Packet |%d|" % i
+            out_funnel.send("Packet |%d|" % i)
+            print("Finished round %d" % i)
+            i += 1
+            j = 0

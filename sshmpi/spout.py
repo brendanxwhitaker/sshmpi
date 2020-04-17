@@ -92,8 +92,9 @@ def target(in_spout: Connection, out_funnel: Connection) -> None:
     while 1:
         data = in_spout.recv()
         logging.info("Received data from in_spout: %s", str(data))
-        local = socket.gethostname()
-        out_funnel.send(local)
+        if isinstance(data, str):
+            local = socket.gethostname()
+            data = "%s: %s" % (local, data)
         out_funnel.send(data)
 
 
