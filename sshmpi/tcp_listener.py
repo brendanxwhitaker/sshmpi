@@ -1,13 +1,17 @@
 """ A simple TCP server listener. """
 import asyncio
+import logging
 import functools
 import multiprocessing as mp
 from multiprocessing.connection import Connection
 
+logging.basicConfig(filename="server-head.log", level=logging.DEBUG)
 
 async def handle_echo(reader, writer, funnel):
     """ Echoes any data sent to the server back to the sender. """
-    data = await reader.read(100)
+    logging.info("Waiting for 10 bytes.")
+    data = await reader.read(10)
+    logging.info("Received 10 bytes.")
     message = data.decode()
     addr = writer.get_extra_info("peername")
 
