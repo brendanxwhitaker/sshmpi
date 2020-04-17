@@ -1,3 +1,4 @@
+import time
 import socket
 import logging
 import threading
@@ -50,6 +51,9 @@ def listener(funnel: Connection) -> None:
         server_thread.daemon = True
         server_thread.start()
         print("Server loop running in thread:", server_thread.name)
+
+        while 1:
+            time.sleep(1)
 
 
 def main() -> None:
