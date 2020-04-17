@@ -58,15 +58,6 @@ def init():
 
     print("Sent data through funnel.")
 
-    # Display the output.
-    for host, out in output.items():
-        for line in out.stdout:
-            if line.strip():
-                print("Host %s: %s" % (host, line))
-        for line in out.stderr:
-            if line.strip():
-                print("Host %s: %s" % (host, line))
-
     while 1:
         reply = in_spout.recv()
         print("RE:", reply)
