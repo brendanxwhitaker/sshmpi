@@ -7,7 +7,7 @@ def main():
     hosts = sorted(get_available_hostnames_from_sshconfig())
     ip = socket.gethostbyname("0.tcp.ngrok.io")
     hostline = " ".join(hosts)
-    line = "%s\t" % ip + " ".join(hosts)
+    entry = "%s\t" % ip + " ".join(hosts)
     with open("/etc/hosts", "r") as hosts_file:
         lines = hosts_file.read().split("\n")
         for line in lines:
@@ -15,8 +15,8 @@ def main():
                 print("Found existing hosts line. Exiting.")
                 sys.exit()
     with open("/etc/hosts", "a") as hosts_file:
-        hosts_file.write(line + "\n")
-        print("Wrote to hostsfile: %s" % line)
+        hosts_file.write(entry + "\n")
+        print("Wrote to hostsfile: %s" % entry)
 
 
 if __name__ == "__main__":
