@@ -9,13 +9,15 @@ import multiprocessing as mp
 from multiprocessing.connection import Connection
 from typing import List
 
+from ssh2.channel import Channel  # pylint: disable=no-name-in-module
+
 from pssh.utils import read_openssh_config
 from pssh.clients import ParallelSSHClient
-from ssh2.channel import Channel
 from sshmpi.local import get_parcel
 
 
 import logging
+
 logging.basicConfig(filename="remote.log", level=logging.DEBUG)
 
 
@@ -89,6 +91,7 @@ def target(in_spout: Connection, out_funnel: Connection) -> None:
         logging.info("Received data from in_spout: %s" % str(data))
         out_funnel.send(data)
 
+
 def main() -> None:
     """ Makes a backward connection to head node and reads from stdin. """
     # Parse arguments.
@@ -118,6 +121,7 @@ def main() -> None:
         p_target.start()
 
     from_head(in_funnel)
+
 
 if __name__ == "__main__":
     main()
