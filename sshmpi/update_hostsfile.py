@@ -10,9 +10,10 @@ def main():
     line = "%s\t" % ip + " ".join(hosts)
     with open("/etc/hosts", "r") as hosts_file:
         lines = hosts_file.read().split("\n")
-        if hostline in lines:
-            print("Found existing hosts line. Exiting.")
-            sys.exit()
+        for line in lines:
+            if hostline in line:
+                print("Found existing hosts line. Exiting.")
+                sys.exit()
     with open("/etc/hosts", "a") as hosts_file:
         hosts_file.write(line + "\n")
         print("Wrote to hostsfile: %s" % line)
