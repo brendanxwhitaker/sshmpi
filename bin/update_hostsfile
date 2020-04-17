@@ -31,7 +31,7 @@ def main():
 
     # Record all available hosts.
     all_hostnames = hosts + [socket.gethostname()]
-    with open(os.path.expanduser("~/.all_hosts"), "r") as all_file:
+    with open(os.path.expanduser("~/.all_hosts"), "w") as all_file:
         for name in all_hostnames:
             all_file.write(name + "\n")
 
