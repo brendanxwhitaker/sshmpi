@@ -1,10 +1,14 @@
 #!/usr/bin/env python
+""" Script for updating ``/etc/hosts``. """
+import os
 import sys
 import socket
-from sshmpi.utils import get_available_hostnames_from_sshconfig
+from sshmpi.openssh import get_available_hostnames_from_sshconfig
 
+# pylint: disable=invalid-name
 
 def main():
+    """ Main function. """
     hosts = sorted(get_available_hostnames_from_sshconfig())
     ip = socket.gethostbyname("0.tcp.ngrok.io")
     hostline = " ".join(hosts)
@@ -18,6 +22,10 @@ def main():
     with open("/etc/hosts", "a") as hosts_file:
         hosts_file.write(entry + "\n")
         print("Wrote to hostsfile: %s" % entry)
+    all_hostnames = hosts + [socket.gethostname()]
+    with open(os.path.expanduser("~/.all_hosts"), "r") as all_file:
+        for name in all_hostnames:
+            all_file.write(name + "\n")
 
 
 if __name__ == "__main__":
