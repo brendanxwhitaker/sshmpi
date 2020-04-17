@@ -1,5 +1,6 @@
 """ Functions for initializing client connections. """
 import os
+import time
 import socket
 import multiprocessing as mp
 from typing import List
@@ -56,8 +57,10 @@ def init():
     p_out = mp.Process(target=multistream_to_head, args=(out_spout, stdins))
     p_out.start()
 
-    data = "Hello out there."
+    sentinel = "Initialized."
+    data = "Initialized."
     out_funnel.send(data)
+    t = time.time()
 
     print("Sent data through funnel.")
 
@@ -65,13 +68,15 @@ def init():
     i = 0
     while 1:
         reply = in_spout.recv()
-        print("RE:", reply)
+        if sentinel in reply:
+            print(reply)
         if data in reply:
             j += 1
 
         if j == len(hosts):
             data = "Packet |%d|" % i
             out_funnel.send("Packet |%d|" % i)
-            print("Finished round %d" % i)
+            print("Finished round %d in %fs" % (i, time.time() - t))
+            t = time.time()
             i += 1
             j = 0
