@@ -39,7 +39,7 @@ def init():
         _, _, port, _ = read_openssh_config(hostname)
         config[hostname] = {"port": port}
 
-    init_delay = 5
+    init_delay = 2
     localhost = socket.gethostname()
     client = ParallelSSHClient(hosts, host_config=config, pkey=pkey)
     host_args = [(localhost, (i + 1) * init_delay) for i in range(len(hosts))]
