@@ -21,7 +21,7 @@ from sshmpi.local import get_parcel
 logging.basicConfig(filename="remote.log", level=logging.DEBUG)
 
 
-async def stdin_read(funnel: Connection) -> None:
+def stdin_read(funnel: Connection) -> None:
     """ Continously reads parcels (length-message) pairs from stdin. """
     buf = b""
     while 1:
@@ -48,7 +48,7 @@ async def stdin_read(funnel: Connection) -> None:
         buf = b""
 
 
-async def write_from_pipe(spout: Connection, stream):
+def write_from_pipe(spout: Connection, stream):
     """ Writes from a pipe connection to a stream. """
     while 1:
         data = spout.recv()
@@ -58,7 +58,7 @@ async def write_from_pipe(spout: Connection, stream):
         # Consider buffering the output so we aren't dumping a huge line over SSH.
         stream.write(pair + "\n".encode("ascii"))
         logging.info("Wrote to stream.")
-        await stream.drain()
+        # await stream.drain()
 
 
 async def multistream_write_from_pipe(spout: Connection, streams: List[Channel]):
@@ -116,14 +116,14 @@ def main() -> None:
         stdin = output[args.hostname].stdin
 
         out_funnel, out_spout = mp.Pipe()
-        p_out = mp.Process(target=to_head, args=(out_spout, stdin))
+        p_out = mp.Process(target=write_from_pipe, args=(out_spout, stdin))
         p_out.start()
 
         # This will run the user's code.
         p_target = mp.Process(target=target, args=(in_spout, out_funnel))
         p_target.start()
 
-    from_head(in_funnel)
+    stdin_read(in_funnel)
 
 
 if __name__ == "__main__":
