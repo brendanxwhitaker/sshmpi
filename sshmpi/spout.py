@@ -25,9 +25,9 @@ def stdin_read(funnel: Connection) -> None:
     """ Continously reads parcels (length-message) pairs from stdin. """
     buf = b""
     while 1:
-        logging.info("Reading from stdin.")
         # Read the length of the message given in 16 bytes.
         buf += sys.stdin.buffer.read(16)
+        t = time.time()
 
         # Parse the message length bytes.
         blength = buf
@@ -41,7 +41,8 @@ def stdin_read(funnel: Connection) -> None:
         # Deserialize the data and send to the backward connection client.
         obj = pickle.loads(buf)
         funnel.send(obj)
-        logging.info("Object sent: %s", str(obj))
+        logging.info("REMOTE: Unpickling time: %fs", time.time() - t)
+        logging.info("REMOTE: Received %s from remote %f", str(obj), time.time())
 
         # Reset buffer.
         buf = b""
@@ -56,7 +57,7 @@ def write_from_pipe(spout: Connection, stream):
 
         # Consider buffering the output so we aren't dumping a huge line over SSH.
         stream.write(pair + "\n".encode("ascii"))
-        logging.info("Wrote to stream.")
+        logging.info("REMOTE: Wrote %s back to head at %f", str(data), time.time())
 
 
 async def multistream_write_from_pipe(spout: Connection, streams: List[Channel]):
