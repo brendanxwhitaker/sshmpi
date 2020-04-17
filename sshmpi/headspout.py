@@ -6,7 +6,6 @@ import asyncio
 import logging
 
 logging.basicConfig(filename="client-head.log", level=logging.DEBUG)
-logging.disable(logging.CRITICAL)
 
 async def stdin_read():
     """ A version of the above function which explicitly reads the length bytes. """
