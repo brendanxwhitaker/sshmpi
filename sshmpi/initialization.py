@@ -1,6 +1,5 @@
 """ Functions for initializing client connections. """
 import os
-import time
 import socket
 import multiprocessing as mp
 from typing import List
@@ -9,7 +8,9 @@ from pssh.utils import read_openssh_config
 from pssh.clients import ParallelSSHClient
 from sshmpi.utils import get_available_hostnames_from_sshconfig
 from sshmpi.spout import multistream_to_head
-from sshmpi.tcp_listener import listener
+
+# from sshmpi.tcp_listener import listener
+from sshmpi.threaded_tcp_listener import listener
 
 
 # TODO: Use this instead of SSH config to make setup more explicit.

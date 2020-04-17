@@ -1,6 +1,7 @@
 """ SSHMPI utilities. """
 import os
 import socket
+import functools
 from typing import List
 from paramiko import SSHConfig
 
@@ -43,3 +44,12 @@ def get_available_hostnames_from_sshconfig(config_file: str = "") -> List[str]:
     hostnames.remove(local)
 
     return hostnames
+
+
+def partialclass(cls, *args, **kwargs):
+    """ Like ``functools.partial``, but for a class instantiator. """
+
+    class Cls(cls):
+        __init__ = functools.partialmethod(cls.__init__, *args, **kwargs)
+
+    return Cls
