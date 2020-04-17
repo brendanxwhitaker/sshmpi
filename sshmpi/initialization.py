@@ -66,7 +66,7 @@ def init():
     while 1:
         reply = in_spout.recv()
         print("RE:", reply)
-        if reply == data:
+        if data in reply:
             j += 1
 
         if j == len(hosts):
