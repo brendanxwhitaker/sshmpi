@@ -52,14 +52,14 @@ def client(ip, port, message):
         sock.sendall(bytes(message, "ascii"))
 
 
-def listener(funnel: Connection) -> None:
+def listener(funnel: Connection, kill_spout: Connection) -> None:
     """ Waits for data and pipes it to HNP via a ThreadedTCPServer. """
     host, port = "127.0.0.1", 8888
     # pylint: disable=broad-except
+    server = ThreadedTCPServer(
+        (host, port), ThreadedTCPRequestHandler, funnel=funnel
+    )
     try:
-        server = ThreadedTCPServer(
-            (host, port), ThreadedTCPRequestHandler, funnel=funnel
-        )
         with server:
             ip, port = server.server_address
 
@@ -71,8 +71,10 @@ def listener(funnel: Connection) -> None:
             server_thread.start()
             print("Server loop running in thread:", server_thread.name)
 
-            while 1:
-                time.sleep(1)
+            signal = kill_spout.recv()
+            if signal == "SIGKILL":
+                server.shutdown()
+
     except Exception as err:
         server.shutdown()
         raise err

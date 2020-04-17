@@ -50,9 +50,10 @@ def test_single_connection(host: str, config: dict, pkey: str) -> float:
     # Bytes coming out of ``in_spout`` are from a remote host.
     in_funnel, in_spout = mp.Pipe()
     out_funnel, out_spout = mp.Pipe()
+    kill_funnel, kill_spout = mp.Pipe()
 
     # The listener will dump bytes sent to ``127.0.0.1:8888`` into the funnel.
-    p_in = mp.Process(target=listener, args=(in_funnel,))
+    p_in = mp.Process(target=listener, args=(in_funnel, kill_spout))
     p_in.start()
 
     p_out = mp.Process(target=multistream_to_head, args=(out_spout, stdins))
@@ -87,6 +88,7 @@ def test_single_connection(host: str, config: dict, pkey: str) -> float:
             i += 1
             j = 0
     mean = sum(latencies) / len(latencies)
+    kill_funnel.send("SIGKILL")
     return mean
 
 
@@ -118,9 +120,10 @@ def init():
     # Bytes coming out of ``in_spout`` are from a remote host.
     in_funnel, in_spout = mp.Pipe()
     out_funnel, out_spout = mp.Pipe()
+    kill_funnel, kill_spout = mp.Pipe()
 
     # The listener will dump bytes sent to ``127.0.0.1:8888`` into the funnel.
-    p_in = mp.Process(target=listener, args=(in_funnel,))
+    p_in = mp.Process(target=listener, args=(in_funnel, kill_spout))
     p_in.start()
 
     p_out = mp.Process(target=multistream_to_head, args=(out_spout, stdins))
