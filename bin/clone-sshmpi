@@ -2,7 +2,7 @@
 nodes=(0 26 27 28 29 30)
 for node in "${nodes[@]}"
 do
-    ssh cc-$node "update_hostsfile" &
+    ssh cc-$node "update_hostsfile && pkill -e spout" &
 done
 for node in "${nodes[@]}"
 do
