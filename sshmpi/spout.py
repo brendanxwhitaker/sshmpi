@@ -3,12 +3,15 @@ import sys
 import pickle
 import asyncio
 import argparse
-from pssh.clients import ParallelSSHClient
+import multiprocessing as mp
+from multiprocessing.connection import Connection
+
 from pssh.utils import read_openssh_config
-from sshmpi.local import write
+from pssh.clients import ParallelSSHClient
+from sshmpi.local import get_parcel
 
 
-async def spout():
+async def stdin_read(funnel: Connection) -> None:
     """ Continously reads parcels (length-message) pairs from stdin. """
     try:
         buf = b""
@@ -21,13 +24,35 @@ async def spout():
 
             # Read the message proper.
             buf = sys.stdin.buffer.read(length + 1)
-            arr = pickle.loads(buf)
-            print(arr)
-            sys.stdout.write("Hello!!\n")
-            sys.stdout.flush()
+
+            # Deserialize the data and send to the backward connection client.
+            obj = pickle.loads(buf)
+            funnel.send(obj)
+
+            # Reset buffer.
             buf = b""
     except KeyboardInterrupt:
         sys.stdout.flush()
+
+
+async def write_from_pipe(spout: Connection, stream):
+    """ Writes from a pipe connection to a stream. """
+    while 1:
+        data = spout.recv()
+        print("Size of packet:", sys.getsizeof(data))
+        pair = get_parcel(data)
+
+        # Consider buffering the output so we aren't dumping a huge line over SSH.
+        stream.write(pair + "\n".encode("ascii"))
+        await stream.drain()
+
+
+def from_head(funnel: Connection) -> None:
+    asyncio.run(stdin_read(funnel))
+
+
+def to_head(spout: Connection, stream):
+    asyncio.run(write_from_pipe(spout, stream))
 
 
 def main() -> None:
@@ -37,16 +62,29 @@ def main() -> None:
     parser.add_argument("--hostname", type=str)
     args = parser.parse_args()
 
-    # Instantiate parallel SSH connections.
+    forward_funnel, forward_spout = mp.Pipe()
+    p_in = mp.Process(target=from_head, args=(forward_funnel,))
+
+    # Instantiate connection back to the head node.
     if args.hostname:
         pkey = ".ssh/id_rsa"
         _, _, port, _ = read_openssh_config(args.hostname)
         client = ParallelSSHClient([args.hostname], port=port, pkey=pkey)
         output = client.run_command("./headspout")
-        stdin = output[args.hostname].stdin
-        asyncio.run(write(stdin))
 
-    asyncio.run(spout())
+        # TODO: Figure out the type of this.
+        stdin = output[args.hostname].stdin
+
+        backward_funnel, backward_spout = mp.Pipe()
+        p_out = mp.Process(target=to_head, args=(backward_spout, stdin))
+
+    p_in.start()
+    p_out.start()
+
+    # Dummy loop just forwards all bytes back to the head node.
+    while 1:
+        data = forward_spout.recv()
+        backward_funnel.send(data)
 
 
 if __name__ == "__main__":

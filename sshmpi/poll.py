@@ -1,6 +1,7 @@
 """ Functions for initializing client connections. """
 import os
 import time
+import socket
 import multiprocessing as mp
 from typing import List
 
@@ -34,12 +35,19 @@ def init():
         _, _, port, _ = read_openssh_config(hostname)
         config[hostname] = {"port": port}
 
+    localhost = socket.gethostname()
     client = ParallelSSHClient(hosts, host_config=config, pkey=pkey)
-    output = client.run_command("./spout")
+    output = client.run_command("./spout --hostname %s" % localhost)
     print("Finished initialization.")
 
-    funnel, _ = mp.Pipe()
+    # The listener will dump bytes sent to ``127.0.0.1:8888`` into the funnel.
+    funnel, spout = mp.Pipe()
     p = mp.Process(target=listener, args=(funnel,))
+    p.start()
+
+    while 1:
+        data = spout.recv()
+        print("Roundtripped:", data)
 
     return output
 
