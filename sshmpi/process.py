@@ -1,6 +1,6 @@
 """ Class for distributed processes. """
 from typing import Callable, Any, Tuple, Dict
-from sshmpi.local import get_parcel
+from sshmpi.parcel import get_parcel
 
 # pylint: disable=too-few-public-methods
 
@@ -10,7 +10,7 @@ class Process:
 
     def __init__(
         self,
-        target: Callable[[Any, ...], Any],
+        target: Callable[..., Any],
         *args: Tuple[Any, ...],
         **kwargs: Dict[str, Any]
     ):
@@ -18,7 +18,7 @@ class Process:
         self.args = args
         self.kwargs = kwargs
 
-    def start(self, output) -> None:
+    def start(self, output: dict) -> None:
         """ Broadcast the ``Process`` to remote nodes. """
         # Pickle the ``Process`` object.
         parcel = get_parcel(self)
