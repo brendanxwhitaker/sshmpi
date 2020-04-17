@@ -33,7 +33,7 @@ def stdin_read(funnel: Connection) -> None:
         # Parse the message length bytes.
         blength = buf
         length = int(blength.decode("ascii"))
-        logging.info("Decoded length: %s" % length)
+        logging.info("Decoded length: %d", length)
         sys.stdout.flush()
 
         # Read the message proper.
@@ -42,7 +42,7 @@ def stdin_read(funnel: Connection) -> None:
         # Deserialize the data and send to the backward connection client.
         obj = pickle.loads(buf)
         funnel.send(obj)
-        logging.info("Object sent: %s" % str(obj))
+        logging.info("Object sent: %s", str(obj))
 
         # Reset buffer.
         buf = b""
@@ -89,7 +89,7 @@ def target(in_spout: Connection, out_funnel: Connection) -> None:
     """ Dummy loop just forwards all bytes back to the head node. """
     while 1:
         data = in_spout.recv()
-        logging.info("Received data from in_spout: %s" % str(data))
+        logging.info("Received data from in_spout: %s", str(data))
         local = socket.gethostname()
         out_funnel.send(local)
         out_funnel.send(data)

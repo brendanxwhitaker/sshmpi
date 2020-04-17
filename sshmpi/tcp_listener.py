@@ -27,7 +27,7 @@ async def stream_read(reader, writer, funnel):
         # Parse the message length bytes.
         blength = buf
         length = int(blength.decode("ascii"))
-        logging.info("SERVER: Decoded length: %s" % length)
+        logging.info("SERVER: Decoded length: %d", length)
         sys.stdout.flush()
 
         # Read the message proper.
@@ -36,7 +36,7 @@ async def stream_read(reader, writer, funnel):
         # Deserialize the data and send to the backward connection client.
         obj = pickle.loads(buf)
         funnel.send(obj)
-        logging.info("SERVER: Object sent: %s" % str(obj))
+        logging.info("SERVER: Object sent: %s", str(obj))
 
         # Reset buffer.
         buf = b""
