@@ -5,9 +5,11 @@ import asyncio
 import argparse
 import multiprocessing as mp
 from multiprocessing.connection import Connection
+from typing import List
 
 from pssh.utils import read_openssh_config
 from pssh.clients import ParallelSSHClient
+from ssh2.channel import Channel
 from sshmpi.local import get_parcel
 
 
@@ -47,8 +49,8 @@ async def write_from_pipe(spout: Connection, stream):
         await stream.drain()
 
 
-async def multistream_write_from_pipe(spout: Connection, streams: list):
-    """ Writes from a pipe connection to a list of streams. """
+async def multistream_write_from_pipe(spout: Connection, streams: List[Channel]):
+    """ Writes from a pipe connection to a list of SSH streams. """
     while 1:
         data = spout.recv()
         print("Size of packet:", sys.getsizeof(data))
@@ -57,7 +59,6 @@ async def multistream_write_from_pipe(spout: Connection, streams: list):
         # Consider buffering the output so we aren't dumping a huge line over SSH.
         for stream in streams:
             stream.write(pair + "\n".encode("ascii"))
-            await stream.drain()
 
 
 def from_head(funnel: Connection) -> None:
