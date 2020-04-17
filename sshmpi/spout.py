@@ -19,16 +19,14 @@ from pssh.utils import read_openssh_config
 from pssh.clients import ParallelSSHClient
 from sshmpi.local import get_parcel
 
-
 logging.basicConfig(filename="remote.log", level=logging.DEBUG)
-
+logging.disable(logging.CRITICAL)
 
 def stdin_read(funnel: Connection) -> None:
     """ Continously reads parcels (length-message) pairs from stdin. """
     buf = b""
     while 1:
         logging.info("Reading from stdin.")
-        sys.stdout.flush()
         # Read the length of the message given in 16 bytes.
         buf += sys.stdin.buffer.read(16)
 
