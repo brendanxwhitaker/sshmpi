@@ -1,4 +1,5 @@
 """ A simple TCP server listener. """
+import sys
 import asyncio
 import logging
 import functools
@@ -6,24 +7,20 @@ import multiprocessing as mp
 from multiprocessing.connection import Connection
 
 logging.basicConfig(filename="server-head.log", level=logging.DEBUG)
+logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
 async def handle_echo(reader, writer, funnel):
     """ Echoes any data sent to the server back to the sender. """
-    logging.info("Waiting for 10 bytes.")
-    data = await reader.read(10)
-    logging.info("Received 10 bytes.")
-    message = data.decode()
-    addr = writer.get_extra_info("peername")
+    while 1:
+        logging.info("Waiting for 10 bytes.")
+        data = await reader.read(10)
+        logging.info("Received 10 bytes.")
+        message = data.decode()
+        addr = writer.get_extra_info("peername")
+        logging.info(f"Received {message!r} from {addr!r}")
 
-    print(f"Received {message!r} from {addr!r}")
-
-    print(f"Send: {message!r}")
-    funnel.send(message)
-    writer.write(data)
-    await writer.drain()
-
-    print("Close the connection")
-    writer.close()
+        funnel.send(message)
+        logging.info("Sent message into head funnel: %s", message)
 
 
 async def wait_for_data(funnel: Connection):
