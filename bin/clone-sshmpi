@@ -7,5 +7,5 @@ do
 done
 for node in "${nodes[@]}"
 do
-    ssh cc-$node "pip uninstall -y sshmpi && pip install git+git://github.com/brendanxwhitaker/sshmpi.git && rm ~/spout"
+    ssh cc-$node "pip uninstall -y sshmpi && pip install git+git://github.com/brendanxwhitaker/sshmpi.git && rm ~/spout && update_hostsfile"
 done
