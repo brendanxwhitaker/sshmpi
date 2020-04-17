@@ -55,20 +55,25 @@ def client(ip, port, message):
 def listener(funnel: Connection) -> None:
     """ Waits for data and pipes it to HNP via a ForkedTCPServer. """
     host, port = "127.0.0.1", 8888
-    server = ForkedTCPServer((host, port), ForkedTCPRequestHandler, funnel=funnel)
-    with server:
-        ip, port = server.server_address
+    # pylint: disable=broad-except
+    try:
+        server = ForkedTCPServer((host, port), ForkedTCPRequestHandler, funnel=funnel)
+        with server:
+            ip, port = server.server_address
 
-        # Start a thread with the server -- that thread will then start one
-        # more thread for each request
-        server_thread = threading.Thread(target=server.serve_forever)
-        # Exit the server thread when the main thread terminates
-        server_thread.daemon = True
-        server_thread.start()
-        print("Server loop running in thread:", server_thread.name)
+            # Start a thread with the server -- that thread will then start one
+            # more thread for each request
+            server_thread = threading.Thread(target=server.serve_forever)
+            # Exit the server thread when the main thread terminates
+            server_thread.daemon = True
+            server_thread.start()
+            print("Server loop running in thread:", server_thread.name)
 
-        while 1:
-            time.sleep(1)
+            while 1:
+                time.sleep(1)
+    except Exception as err:
+        server.shutdown()
+        raise err
 
 
 def main() -> None:

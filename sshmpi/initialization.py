@@ -40,7 +40,8 @@ def init():
 
     localhost = socket.gethostname()
     client = ParallelSSHClient(hosts, host_config=config, pkey=pkey)
-    output: dict = client.run_command("spout --hostname %s" % localhost)
+    host_args = [(localhost, i) for i in range(len(hosts))]
+    output = client.run_command("spout --hostname %s --rank %d", host_args=host_args)
     stdins = [out.stdin for out in output.values()]
     print("Finished initialization.")
 
