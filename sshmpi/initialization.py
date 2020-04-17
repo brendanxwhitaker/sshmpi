@@ -36,9 +36,10 @@ def init():
         _, _, port, _ = read_openssh_config(hostname)
         config[hostname] = {"port": port}
 
+    init_delay = 5
     localhost = socket.gethostname()
     client = ParallelSSHClient(hosts, host_config=config, pkey=pkey)
-    host_args = [(localhost, (i + 1) * 10) for i in range(len(hosts))]
+    host_args = [(localhost, (i + 1) * init_delay) for i in range(len(hosts))]
     output = client.run_command("spout --hostname %s --rank %d", host_args=host_args)
     stdins = [out.stdin for out in output.values()]
     print("Finished initialization.")
