@@ -26,7 +26,8 @@ async def spout():
 
 
 async def stdin_read():
-    """ Continously reads bytes from stdout and forwards them to SSHMPI HNP. """
+    """ A version of the above function which explicitly reads the length bytes. """
+    logging.info("Attempting to open connection to server.")
     _, writer = await asyncio.open_connection("127.0.0.1", 8888)
     logging.info("Successfully connected to server.")
     buf = b""
