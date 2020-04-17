@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """ Called by workers on the head node via SSH. Broadcasts stdout to TCP. """
 import sys
 import asyncio
