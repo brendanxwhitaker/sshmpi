@@ -106,7 +106,7 @@ def main() -> None:
         pkey = os.path.expanduser("~/.ssh/id_rsa")
         _, _, port, _ = read_openssh_config(args.hostname)
         client = ParallelSSHClient([args.hostname], port=port, pkey=pkey)
-        output = client.run_command("./headspout")
+        output = client.run_command("headspout")
 
         # TODO: Figure out the type of this.
         stdin = output[args.hostname].stdin
