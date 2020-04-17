@@ -7,29 +7,22 @@ import functools
 import multiprocessing as mp
 from multiprocessing.connection import Connection
 
-logging.basicConfig(filename="server-head.log", level=logging.DEBUG)
-logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
-
 
 async def handle_echo(reader, writer, funnel):
     """ Echoes any data sent to the server back to the sender. """
     while 1:
-        logging.info("Waiting for 10 bytes.")
         data = await reader.read(10)
-        logging.info("Received 10 bytes.")
         message = data.decode()
         addr = writer.get_extra_info("peername")
-        logging.info(f"Received {message!r} from {addr!r}")
-
         funnel.send(message)
-        logging.info("Sent message into head funnel: %s", message)
 
 
 async def stream_read(reader, writer, funnel):
     buf = b""
     while 1:
         # Read the length of the message given in 16 bytes.
-        buf += reader.read(16)
+        logging.info("SERVER: Waiting for length bytes.")
+        buf += await reader.read(16)
 
         # Parse the message length bytes.
         blength = buf
@@ -38,7 +31,7 @@ async def stream_read(reader, writer, funnel):
         sys.stdout.flush()
 
         # Read the message proper.
-        buf = reader.read(length + 1)
+        buf = await reader.read(length + 1)
 
         # Deserialize the data and send to the backward connection client.
         obj = pickle.loads(buf)
