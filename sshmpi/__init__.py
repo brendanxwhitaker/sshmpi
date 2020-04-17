@@ -1,2 +1,2 @@
 """ SSHMPI. """
-from sshmpi.poll import init
+from sshmpi.initialization import init

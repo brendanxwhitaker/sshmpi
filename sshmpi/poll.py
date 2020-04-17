@@ -1,55 +1,7 @@
 """ Functions for initializing client connections. """
-import os
 import time
-import socket
-import multiprocessing as mp
-from typing import List
-
-from pssh.clients import ParallelSSHClient
 from pssh.utils import read_openssh_config
-from sshmpi.tcp_listener import listener
-from sshmpi.utils import get_available_hostnames_from_sshconfig
-
-
-# TODO: Use this instead of SSH config to make setup more explicit.
-def get_nodes() -> List[str]:
-    """ Read hostnames of remote nodes. """
-    nodes_path = os.path.expanduser("~/nodes.json")
-    with open(nodes_path, "r") as nodes_file:
-        lines = nodes_file.read().split("\n")
-        print(lines)
-    return lines
-
-
-def init():
-    """ Public-facing API for SSHMPI initialization. """
-    # Define private key path and hostnames.
-    pkey = os.path.expanduser("~/.ssh/id_rsa")
-
-    hosts = get_available_hostnames_from_sshconfig()
-    print("Hosts:", hosts)
-
-    # Per-host config dictionaries.
-    config = {}
-    for hostname in hosts:
-        _, _, port, _ = read_openssh_config(hostname)
-        config[hostname] = {"port": port}
-
-    localhost = socket.gethostname()
-    client = ParallelSSHClient(hosts, host_config=config, pkey=pkey)
-    output = client.run_command("./spout --hostname %s" % localhost)
-    print("Finished initialization.")
-
-    # The listener will dump bytes sent to ``127.0.0.1:8888`` into the funnel.
-    funnel, spout = mp.Pipe()
-    p = mp.Process(target=listener, args=(funnel,))
-    p.start()
-
-    while 1:
-        data = spout.recv()
-        print("Roundtripped:", data)
-
-    return output
+from pssh.clients import ParallelSSHClient
 
 
 # Pickle a sample function.

@@ -47,12 +47,29 @@ async def write_from_pipe(spout: Connection, stream):
         await stream.drain()
 
 
+async def multistream_write_from_pipe(spout: Connection, streams: list):
+    """ Writes from a pipe connection to a list of streams. """
+    while 1:
+        data = spout.recv()
+        print("Size of packet:", sys.getsizeof(data))
+        pair = get_parcel(data)
+
+        # Consider buffering the output so we aren't dumping a huge line over SSH.
+        for stream in streams:
+            stream.write(pair + "\n".encode("ascii"))
+            await stream.drain()
+
+
 def from_head(funnel: Connection) -> None:
     asyncio.run(stdin_read(funnel))
 
 
 def to_head(spout: Connection, stream):
     asyncio.run(write_from_pipe(spout, stream))
+
+
+def multistream_to_head(spout: Connection, streams: list):
+    asyncio.run(multistream_write_from_pipe(spout, streams))
 
 
 def main() -> None:
@@ -62,8 +79,8 @@ def main() -> None:
     parser.add_argument("--hostname", type=str)
     args = parser.parse_args()
 
-    forward_funnel, forward_spout = mp.Pipe()
-    p_in = mp.Process(target=from_head, args=(forward_funnel,))
+    in_funnel, in_spout = mp.Pipe()
+    p_in = mp.Process(target=from_head, args=(in_funnel,))
 
     # Instantiate connection back to the head node.
     if args.hostname:
@@ -75,16 +92,16 @@ def main() -> None:
         # TODO: Figure out the type of this.
         stdin = output[args.hostname].stdin
 
-        backward_funnel, backward_spout = mp.Pipe()
-        p_out = mp.Process(target=to_head, args=(backward_spout, stdin))
+        out_funnel, out_spout = mp.Pipe()
+        p_out = mp.Process(target=to_head, args=(out_spout, stdin))
 
     p_in.start()
     p_out.start()
 
     # Dummy loop just forwards all bytes back to the head node.
     while 1:
-        data = forward_spout.recv()
-        backward_funnel.send(data)
+        data = in_spout.recv()
+        out_funnel.send(data)
 
 
 if __name__ == "__main__":
