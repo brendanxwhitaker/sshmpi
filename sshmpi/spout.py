@@ -96,9 +96,9 @@ def main() -> None:
 
         out_funnel, out_spout = mp.Pipe()
         p_out = mp.Process(target=to_head, args=(out_spout, stdin))
+        p_out.start()
 
     p_in.start()
-    p_out.start()
 
     # Dummy loop just forwards all bytes back to the head node.
     while 1:
