@@ -1,5 +1,6 @@
 """ Functions for initializing client connections. """
 import os
+import time
 import socket
 import multiprocessing as mp
 from typing import List
@@ -54,6 +55,18 @@ def init():
 
     data = "Hello out there."
     out_funnel.send(data)
+
+    print("Sent data through funnel.")
+
+    # Display the output.
+    for host, out in output.items():
+        for line in out.stdout:
+            if line.strip():
+                print("Host %s: %s" % (host, line))
+        for line in out.stderr:
+            if line.strip():
+                print("Host %s: %s" % (host, line))
+
     while 1:
         reply = in_spout.recv()
         print("RE:", reply)
