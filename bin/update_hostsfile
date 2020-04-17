@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 """ Script for updating ``/etc/hosts``. """
 import os
-import sys
 import socket
 from sshmpi.openssh import get_available_hostnames_from_sshconfig
 
@@ -13,15 +12,24 @@ def main():
     ip = socket.gethostbyname("0.tcp.ngrok.io")
     hostline = " ".join(hosts)
     entry = "%s\t" % ip + " ".join(hosts)
+
+    # Check if we've already added a line to the hosts file.
+    untouched = True
     with open("/etc/hosts", "r") as hosts_file:
         lines = hosts_file.read().split("\n")
         for line in lines:
             if hostline in line:
-                print("Found existing hosts line. Exiting.")
-                sys.exit()
-    with open("/etc/hosts", "a") as hosts_file:
-        hosts_file.write(entry + "\n")
-        print("Wrote to hostsfile: %s" % entry)
+                print("Found existing hosts line.")
+                untouched = False
+                break
+
+    # Possible add a line to hosts file.
+    if untouched:
+        with open("/etc/hosts", "a") as hosts_file:
+            hosts_file.write(entry + "\n")
+            print("Wrote to hostsfile: %s" % entry)
+
+    # Record all available hosts.
     all_hostnames = hosts + [socket.gethostname()]
     with open(os.path.expanduser("~/.all_hosts"), "r") as all_file:
         for name in all_hostnames:
