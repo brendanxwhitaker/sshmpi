@@ -21,31 +21,29 @@ logging.basicConfig(filename="remote.log", level=logging.DEBUG)
 
 async def stdin_read(funnel: Connection) -> None:
     """ Continously reads parcels (length-message) pairs from stdin. """
-    try:
-        buf = b""
-        while 1:
-            logging.info("Reading from stdin.")
-            sys.stdout.flush()
-            # Read the length of the message given in 16 bytes.
-            buf += sys.stdin.buffer.read(16)
-
-            # Parse the message length bytes.
-            blength = buf
-            length = int(blength.decode("ascii"))
-            logging.info("Decoded length: %s" % length)
-            sys.stdout.flush()
-
-            # Read the message proper.
-            buf = sys.stdin.buffer.read(length + 1)
-
-            # Deserialize the data and send to the backward connection client.
-            obj = pickle.loads(buf)
-            funnel.send(obj)
-
-            # Reset buffer.
-            buf = b""
-    except KeyboardInterrupt:
+    buf = b""
+    while 1:
+        logging.info("Reading from stdin.")
         sys.stdout.flush()
+        # Read the length of the message given in 16 bytes.
+        buf += sys.stdin.buffer.read(16)
+
+        # Parse the message length bytes.
+        blength = buf
+        length = int(blength.decode("ascii"))
+        logging.info("Decoded length: %s" % length)
+        sys.stdout.flush()
+
+        # Read the message proper.
+        buf = sys.stdin.buffer.read(length + 1)
+
+        # Deserialize the data and send to the backward connection client.
+        obj = pickle.loads(buf)
+        funnel.send(obj)
+        logging.info("Object sent: %s" % str(obj))
+
+        # Reset buffer.
+        buf = b""
 
 
 async def write_from_pipe(spout: Connection, stream):
@@ -88,6 +86,7 @@ def target(in_spout: Connection, out_funnel: Connection) -> None:
     """ Dummy loop just forwards all bytes back to the head node. """
     while 1:
         data = in_spout.recv()
+        logging.info("Received data from in_spout: %s" % str(data))
         out_funnel.send(data)
 
 def main() -> None:
