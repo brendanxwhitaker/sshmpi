@@ -1,4 +1,5 @@
 import time
+import pickle
 import socket
 import logging
 import threading
@@ -11,14 +12,28 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
     """ Handles incoming requests. """
 
     def handle(self):
-        """ Actually handle the request. """
-        data = str(self.request.recv(1024), "ascii")
-        cur_thread = threading.current_thread()
-        response = bytes("{}: {}".format(cur_thread.name, data), "ascii")
+        buf = b""
+        while 1:
+            # Read the length of the message given in 16 bytes.
+            logging.info("SERVER: Waiting for length bytes.")
+            cur_thread = threading.current_thread()
+            buf += self.request.recv(16)
 
-        # Send the response to the HNP.
-        self.server.funnel.send(response)
-        logging.info("SERVER: Sent received data through funnel: %s", str(data))
+            # Parse the message length bytes.
+            blength = buf
+            length = int(blength.decode("ascii"))
+            logging.info("SERVER: %s: Decoded length: %d", cur_thread.name, length)
+
+            # Read the message proper.
+            buf = self.request.recv(length + 1)
+
+            # Deserialize the data and send to the backward connection client.
+            obj = pickle.loads(buf)
+            self.server.funnel.send(obj)
+            logging.info("SERVER: %s: Object sent: %s", cur_thread.name, str(obj))
+
+            # Reset buffer.
+            buf = b""
 
 
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
