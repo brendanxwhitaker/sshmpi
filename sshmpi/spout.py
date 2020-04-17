@@ -19,11 +19,14 @@ async def stdin_read(funnel: Connection) -> None:
     try:
         buf = b""
         while 1:
+            print("Reading from stdin.")
+            sys.stdout.flush()
             # Read the length of the message given in 16 bytes.
             buf += sys.stdin.buffer.read(16)
             blength = buf
             length = int(blength.decode("ascii"))
             print("Decoded length:", length)
+            sys.stdout.flush()
 
             # Read the message proper.
             buf = sys.stdin.buffer.read(length + 1)
