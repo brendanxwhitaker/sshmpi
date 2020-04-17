@@ -20,7 +20,6 @@ from pssh.clients import ParallelSSHClient
 from sshmpi.local import get_parcel
 
 logging.basicConfig(filename="remote.log", level=logging.DEBUG)
-logging.disable(logging.CRITICAL)
 
 def stdin_read(funnel: Connection) -> None:
     """ Continously reads parcels (length-message) pairs from stdin. """

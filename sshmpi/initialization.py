@@ -9,7 +9,8 @@ from pssh.clients import ParallelSSHClient
 from sshmpi.utils import get_available_hostnames_from_sshconfig
 from sshmpi.spout import multistream_to_head
 
-from sshmpi.forked_tcp_listener import listener
+# from sshmpi.forked_tcp_listener import listener
+from sshmpi.threaded_tcp_listener import listener
 
 
 # TODO: Use this instead of SSH config to make setup more explicit.
