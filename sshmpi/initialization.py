@@ -42,7 +42,7 @@ def test_single_connection(host: str, k: int) -> float:
     hosts = [host]
 
     # Open the connection.
-    p_in, p_out, out_funnel, in_spout, kill_funnel = open_connection(hosts)
+    p_in, p_out, out_funnel, in_spout, kill_funnel, done_spout = open_connection(hosts)
 
     # Initialize variables.
     j = 0
@@ -81,6 +81,9 @@ def test_single_connection(host: str, k: int) -> float:
     mean = sum(latencies) / len(latencies)
     kill_funnel.send("SIGKILL")
 
+    done_spout.recv()
+    print("Server has been successfully shutdown.")
+
     # Kill the associated processes.
     p_in.terminate()
     p_in.join()
@@ -92,7 +95,7 @@ def test_single_connection(host: str, k: int) -> float:
 
 def open_connection(
     hosts: List[str],
-) -> Tuple[mp.Process, mp.Process, Connection, Connection, Connection]:
+) -> Tuple[mp.Process, mp.Process, Connection, Connection, Connection, Connection]:
     """ Open a connection to the remote workers in ``hosts``. """
     print("Hosts:", hosts)
 
@@ -117,9 +120,10 @@ def open_connection(
     in_funnel, in_spout = mp.Pipe()
     out_funnel, out_spout = mp.Pipe()
     kill_funnel, kill_spout = mp.Pipe()
+    done_funnel, done_spout = mp.Pipe()
 
     # The listener will dump bytes sent to ``127.0.0.1:8888`` into the funnel.
-    p_in = mp.Process(target=listener, args=(in_funnel, kill_spout))
+    p_in = mp.Process(target=listener, args=(in_funnel, kill_spout, done_funnel))
     p_in.start()
 
     # Start a process to send bytes to remote workers.
@@ -132,7 +136,7 @@ def open_connection(
     print(reply)
     assert sentinel in reply
 
-    return p_in, p_out, out_funnel, in_spout, kill_funnel
+    return p_in, p_out, out_funnel, in_spout, kill_funnel, done_spout
 
 
 def init() -> None:
