@@ -79,6 +79,8 @@ def listener(funnel: Connection, kill_spout: Connection) -> None:
         server.shutdown()
         raise err
 
+    return 0
+
 
 def main() -> None:
     # Port 0 means to select an arbitrary unused port.
