@@ -80,6 +80,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--hostname", type=str)
     args = parser.parse_args()
+    print("Args hostname:", args.hostname)
 
     in_funnel, in_spout = mp.Pipe()
     p_in = mp.Process(target=from_head, args=(in_funnel,))
