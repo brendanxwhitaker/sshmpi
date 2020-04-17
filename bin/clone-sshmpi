@@ -2,14 +2,14 @@
 nodes=(0 26 27 28 29 30)
 for node in "${nodes[@]}"
 do
-    ssh cc-$node "update_hostsfile"
+    ssh cc-$node "update_hostsfile" &
 done
 for node in "${nodes[@]}"
 do
-    scp ~/.ssh/config cc-$node:~/.ssh/config
-    scp ~/.ssh/id_rsa cc-$node:~/.ssh/id_rsa
+    scp ~/.ssh/config cc-$node:~/.ssh/config &
+    scp ~/.ssh/id_rsa cc-$node:~/.ssh/id_rsa &
 done
 for node in "${nodes[@]}"
 do
-    ssh cc-$node "pip uninstall -y sshmpi && pip install git+git://github.com/brendanxwhitaker/sshmpi.git && rm ~/spout"
+    ssh cc-$node "pip uninstall -y sshmpi && pip install git+git://github.com/brendanxwhitaker/sshmpi.git && rm ~/spout" &
 done
