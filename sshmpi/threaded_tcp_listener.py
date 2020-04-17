@@ -45,6 +45,7 @@ class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
 
 class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     """ This just adds the ThreadingMixIn. """
+    allow_reuse_address = True
 
     def __init__(self, *args, **kwargs) -> None:  # type: ignore[no-untyped-def]
         if "funnel" in kwargs:
