@@ -42,7 +42,8 @@ def get_available_hostnames_from_sshconfig(config_file: str = "") -> List[str]:
 
     # Remove localhost.
     local = socket.gethostname()
-    hostnames.remove(local)
+    if local in hostnames:
+        hostnames.remove(local)
     hostnames = sorted(hostnames)
 
     return hostnames
