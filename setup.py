@@ -62,7 +62,7 @@ def read(fname: str) -> str:
 
 
 setup(
-    name="mead",
+    name="mead-mpi",
     version="0.0.1a",
     author="Brendan Whitaker",
     description=("A message passing interface via UDP NAT-traversal."),

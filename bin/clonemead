@@ -12,5 +12,5 @@ do
 done
 for node in "${nodes[@]}"
 do
-    ssh $node "pip uninstall -y sshmpi && pip install git+git://github.com/brendanxwhitaker/sshmpi.git && rm ~/spout" &
+    ssh $node "pip uninstall -y mead && pip install git+git://github.com/brendanxwhitaker/mead.git && rm ~/spout" &
 done
