@@ -1,7 +1,0 @@
-#!/usr/bin/env python
-""" Called by HNP on remote nodes via SSH. Calls all remote ``Process`` functions. """
-from sshmpi.spout import main
-
-
-if __name__ == "__main__":
-    main()

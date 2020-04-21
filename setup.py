@@ -62,17 +62,17 @@ def read(fname: str) -> str:
 
 
 setup(
-    name="sshmpi",
+    name="mead",
     version="0.0.1a",
     author="Brendan Whitaker",
-    description=("A message passing interface over pure SSH."),
+    description=("A message passing interface via UDP NAT-traversal."),
     license="GPLv3",
-    packages=["sshmpi"],
+    packages=["mead"],
     long_description="",
     long_description_content_type="text/plain",
     install_requires=["numpy", "parallel-ssh", "paramiko"],
-    scripts=["bin/spout", "bin/clone-sshmpi", "bin/headspout", "bin/update_hostsfile"],
-    package_data={"sshmpi": []},
+    scripts=["bin/clone-sshmpi", "bin/meadclient", "bin/update-hostsfile"],
+    package_data={"mead": []},
     include_package_data=True,
     python_requires=">=3.7.0",
     classifiers=[

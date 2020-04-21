@@ -1,7 +1,0 @@
-#!/usr/bin/env python
-""" Called by workers on the head node via SSH. Broadcasts stdout to TCP. """
-from sshmpi.headspout import main
-
-
-if __name__ == "__main__":
-    main()
