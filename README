@@ -1,5 +1,5 @@
-+------+
-|sshmpi|
-+------+
++----+
+|mead|
++----+
 
-A message passing interface over pure SSH.
+A message passing interface via UDP NAT-traversal.
