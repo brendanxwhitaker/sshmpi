@@ -84,6 +84,9 @@ def inject(in_spout: Connection, injection_funnels: Dict[str, Connection]) -> No
     while 1:
         parcel = in_spout.recv()
         logging.info("INJECTION: parcel: %s", str(parcel))
+        if not isinstance(parcel, Parcel):
+            logging.info("INJECTION: Error: obj not a Parcel: %s", str(parcel))
+            
         assert isinstance(parcel, Parcel)
         assert not isinstance(parcel.obj, Parcel)
         injection_funnels[parcel.pipe_id].send(parcel.obj)
