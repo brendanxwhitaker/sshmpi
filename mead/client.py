@@ -105,8 +105,7 @@ class Client:
                 logging.info("%s: length: %d", self.channel, length)
 
                 # Receive the object.
-                # bdata, addr = sock.recvfrom(length)
-                bdata, addr = sock.recvfrom(16)
+                bdata, addr = sock.recvfrom(length)
 
                 # Abort if the sender changed.
                 if addr not in (self.target, self.master):
@@ -130,6 +129,8 @@ class Client:
 
             # Send to target client.
             sock.sendto(pair, self.target)
+            sock.sendto(pair[:16], self.target)
+            sock.sendto(pair[16:], self.target)
 
     @staticmethod
     def chat_fullcone(
