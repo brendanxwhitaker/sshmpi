@@ -49,7 +49,7 @@ def main() -> None:
     ClientInfo = namedtuple("ClientInfo", "addr, nat_type_id")
     channel_map: Dict[str, ClientInfo] = {}
 
-    connection_stages: Dict[Tuple[str, int], str] = {}
+    connection_stages: Dict[Tuple[str, int], Tuple[str, str]] = {}
     addr: Tuple[str, int]
 
     while True:
@@ -60,7 +60,7 @@ def main() -> None:
         print("DEBUG: data:", data)
 
         # Retrieve the connection stage of this address.
-        stage: str = connection_stages.get(addr, "initial")
+        stage, channel = connection_stages.get(addr, ("initial", ""))
 
         # Receive a channel and NAT type from a client.
         if stage == "initial":
@@ -76,7 +76,7 @@ def main() -> None:
             print("channel=%s, nat_type=%s, ok sent to client" % (channel, nat_type))
 
             # Update the connection stage.
-            connection_stages[addr] = "confirm"
+            connection_stages[addr] = ("confirm", channel)
             continue
 
         # Wait until the client confirms it received the ``ok``.
