@@ -13,6 +13,8 @@ from threading import Thread
 import multiprocessing as mp
 from multiprocessing.connection import Connection
 
+import dill
+
 from mead.classes import Process, Funnel, Spout, inject, extract
 from mead.translation import get_length_message_pair
 
@@ -116,7 +118,7 @@ class Client:
                 logging.info("DEBUG: bdata before unpickle: %s", str(bdata))
                 logging.info("DEBUG: length of bdata: %d", len(bdata))
                 try:
-                    obj = pickle.loads(bdata)
+                    obj = dill.loads(bdata)
                 except Exception as err:
                     logging.info("ERR: %s", str(err))
                     raise err
