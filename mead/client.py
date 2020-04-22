@@ -114,6 +114,7 @@ class Client:
 
                 # Pickle and send the object.
                 logging.info("DEBUG: bdata before unpickle: %s", str(bdata))
+                logging.info("DEBUG: length of bdata: %d", len(bdata))
                 try:
                     obj = pickle.loads(bdata)
                 except Exception as err:
