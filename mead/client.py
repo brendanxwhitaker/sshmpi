@@ -123,7 +123,11 @@ class Client:
                     logging.info("ERR: %s", str(err))
                     raise err
                 logging.info("DEBUG: obj: %s", str(obj))
-                self.in_funnel.send(obj)
+                try:
+                    self.in_funnel.send(obj)
+                except Exception as err:
+                    logging.info("ERR: %s", str(err))
+                    raise err
                 logging.info("DEBUG: sent obj.")
 
     def send_msg(self, sock: socket.socket) -> None:
