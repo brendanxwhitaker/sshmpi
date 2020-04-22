@@ -57,6 +57,7 @@ def main() -> None:
         # At this pout, ``data`` could be a channel, NAT-type pair, or an ok.
         data_bytes, addr = sockfd.recvfrom(1024)
         data = data_bytes.decode("ascii")
+        print("DEBUG: data:", data)
 
         # Retrieve the connection stage of this address.
         stage: str = connection_stages.get(addr, "initial")

@@ -54,6 +54,7 @@ class Client:
 
         # Send channel and NAT type to server, requesting a connection.
         msg = (self.channel + " {0}".format(nat_type_id)).encode("ascii")
+        print("DEBUG: self.master:", self.master)
         self.sockfd.sendto(msg, self.master)
 
         # Wait for ``ok``, acknowledgement of request.
