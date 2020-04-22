@@ -1,10 +1,10 @@
 """ A function for transforming an arbitrary python object into a byte sequence. """
-import pickle
+import dill
 
 
 def get_length_message_pair(obj: object) -> bytes:
     """ Pickles an object and returns bytes of a length+message pair. """
-    message = pickle.dumps(obj)
+    message = dill.dumps(obj)
 
     # Get representation of then length of ``message`` in bytes.
     length = str(len(message)).encode("ascii")

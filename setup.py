@@ -70,7 +70,7 @@ setup(
     packages=["mead"],
     long_description="",
     long_description_content_type="text/plain",
-    install_requires=["numpy", "parallel-ssh", "paramiko"],
+    install_requires=["numpy", "parallel-ssh", "paramiko", "dill"],
     scripts=["bin/clonemead", "bin/meadclient", "bin/update_hostsfile"],
     package_data={"mead": []},
     include_package_data=True,
