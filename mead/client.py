@@ -217,6 +217,10 @@ def remote(server_ip: str, port: int, channel: str) -> None:
         # Assume obj is already unpickled.
         obj = in_spout.recv()
 
+        logging.info("REMOTE: received obj: %s", obj)
+        if not isinstance(obj, Process):
+            logging.info("ERR: obj not Process: %s", obj)
+
         # If we're sent a mead process to run.
         if isinstance(obj, Process):
             p = obj
@@ -252,6 +256,8 @@ def remote(server_ip: str, port: int, channel: str) -> None:
                     mp_kwargs[name] = spout
                 else:
                     mp_kwargs[name] = arg
+
+            logging.info("REMOTE: starting user processes.")
 
             # Construct and start the user's process.
             p_user = mp.Process(target=p.target, args=tuple(mp_args), kwargs=mp_kwargs)
