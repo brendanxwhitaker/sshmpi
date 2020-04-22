@@ -105,7 +105,8 @@ class Client:
                 logging.info("%s: length: %d", self.channel, length)
 
                 # Receive the object.
-                bdata, addr = sock.recvfrom(length)
+                # bdata, addr = sock.recvfrom(length)
+                bdata, addr = sock.recvfrom(16)
 
                 # Abort if the sender changed.
                 if addr not in (self.target, self.master):
