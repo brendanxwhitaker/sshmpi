@@ -76,7 +76,7 @@ def init() -> None:
         # Get connection information from ``config``.
         # TODO: Don't use ``port`` for two different things.
         server_ip: str = config["server_ip"]
-        port: int = config["port"]
+        port = config["port"]
 
         # We use the hostname as the channel.
         leader = Client(server_ip, port, hostname, in_funnel, out_queue)

@@ -144,14 +144,19 @@ class Client:
         # Connect to the server and request a channel.
         self.request_for_connection(nat_type_id="0")
 
-        # Chat with peer.
-        print("FullCone chat mode")
-        self.chat_fullcone(self.send_msg, self.recv_msg, self.sockfd)
-
         # Send a refresh token to initialize the connection.
         data = "refresh"
         bdata = data.encode("ascii")
         self.sockfd.sendto(bdata, self.target)
+
+        # Wait for a refresh token from the other client.
+        bdata, _addr = self.sockfd.recvfrom(1024)
+        data = bdata.decode("ascii")
+        assert data == "refresh"
+
+        # Chat with peer.
+        print("FullCone chat mode")
+        self.chat_fullcone(self.send_msg, self.recv_msg, self.sockfd)
 
         # Let the threads run.
         while True:
