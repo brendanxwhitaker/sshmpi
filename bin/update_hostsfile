@@ -2,7 +2,7 @@
 """ Script for updating ``/etc/hosts``. """
 import os
 import socket
-from sshmpi.openssh import get_available_hostnames_from_sshconfig
+from mead.openssh import get_available_hostnames_from_sshconfig
 
 # pylint: disable=invalid-name
 
