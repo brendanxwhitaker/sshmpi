@@ -71,7 +71,7 @@ setup(
     long_description="",
     long_description_content_type="text/plain",
     install_requires=["numpy", "parallel-ssh", "paramiko"],
-    scripts=["bin/clone-sshmpi", "bin/meadclient", "bin/update-hostsfile"],
+    scripts=["bin/clonemead", "bin/meadclient", "bin/update_hostsfile"],
     package_data={"mead": []},
     include_package_data=True,
     python_requires=">=3.7.0",
