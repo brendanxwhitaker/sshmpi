@@ -89,6 +89,11 @@ class Client:
             # If the data is from a valid sender.
             if addr in (self.target, self.master):
 
+                # Handle timeout refresh tokens.
+                if data == "refresh":
+                    print("DEBUG: received refresh token.")
+                    continue
+
                 # Parse the message length bytes.
                 # TODO: Handle case when data cannot be cast to int.
                 length = int(data)
@@ -137,6 +142,11 @@ class Client:
         # Chat with peer.
         print("FullCone chat mode")
         self.chat_fullcone(self.send_msg, self.recv_msg, self.sockfd)
+
+        # Send a refresh token to initialize the connection.
+        data = "refresh"
+        bdata = data.encode("ascii")
+        self.sockfd.sendto(bdata, self.target)
 
         # Let the threads run.
         while True:
