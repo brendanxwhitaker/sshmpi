@@ -8,6 +8,7 @@ import multiprocessing as mp
 
 from pssh.utils import read_openssh_config
 from pssh.clients import ParallelSSHClient
+from pssh.exceptions import Timeout
 
 from mead import cellar
 from mead.client import Client
@@ -59,7 +60,13 @@ def init() -> None:
 
     # Command string format arguments are in ``host_args``.
     host_args = [(config["server_ip"], config["port"], hostname) for hostname in hosts]
-    output = sshclient.run_command("meadclient %s %s %s", host_args=host_args)
+    output = sshclient.run_command("meadclient %s %s %s", host_args=host_args, timeout=30)
+    for host, host_out in output.items():
+        try:
+            for line in host_out.stdout:
+                print(line)
+        except Timeout:
+            pass
 
     # Create and start the head node clients.
     head_processes: Dict[str, mp.Process] = {}
