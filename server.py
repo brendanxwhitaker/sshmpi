@@ -49,26 +49,39 @@ def main() -> None:
     ClientInfo = namedtuple("ClientInfo", "addr, nat_type_id")
     channel_map: Dict[str, ClientInfo] = {}
 
+    connection_stages: Dict[Tuple[str, int], str] = {}
+    addr: Tuple[str, int]
+
     while True:
-        # Receive a channel and NAT type from a client.
+
+        # At this pout, ``data`` could be a channel, NAT-type pair, or an ok.
         data_bytes, addr = sockfd.recvfrom(1024)
         data = data_bytes.decode("ascii")
-        channel, nat_type_id = data.strip().split()
-        print("connection from %s:%d" % addr)
 
-        # Tell the client ``ok``, it is connected to the channel.
-        ok_msg_bytes = ("ok %s" % channel).encode("ascii")
-        sockfd.sendto(ok_msg_bytes, addr)
+        # Retrieve the connection stage of this address.
+        stage: str = connection_stages.get(addr, "initial")
 
-        # Display channel and NAT type.
-        nat_type = NATTYPE[int(nat_type_id)]
-        print("channel=%s, nat_type=%s, ok sent to client" % (channel, nat_type))
+        # Receive a channel and NAT type from a client.
+        if stage == "initial":
+            channel, nat_type_id = data.strip().split()
+            print("connection from %s:%d" % addr)
+
+            # Tell the client ``ok``, it is connected to the channel.
+            ok_msg_bytes = ("ok %s" % channel).encode("ascii")
+            sockfd.sendto(ok_msg_bytes, addr)
+
+            # Display channel and NAT type.
+            nat_type = NATTYPE[int(nat_type_id)]
+            print("channel=%s, nat_type=%s, ok sent to client" % (channel, nat_type))
+
+            # Update the connection stage.
+            connection_stages[addr] = "confirm"
+            continue
 
         # Wait until the client confirms it received the ``ok``.
-        data_bytes, addr = sockfd.recvfrom(2)
-        data = data_bytes.decode("ascii")
-        if data != "ok":
-            continue
+        if stage == "confirm":
+            if data != "ok":
+                continue
 
         print("request received for channel:", channel)
 
