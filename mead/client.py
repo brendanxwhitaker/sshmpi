@@ -6,6 +6,7 @@ import time
 import socket
 import struct
 import pickle
+import logging
 from typing import Tuple, Callable, Dict, List, Any
 from threading import Thread
 
@@ -14,6 +15,8 @@ from multiprocessing.connection import Connection
 
 from mead.classes import Process, Funnel, Spout, inject, extract
 from mead.translation import get_length_message_pair
+
+logging.basicConfig(filename="client.log", level=logging.DEBUG)
 
 # pylint: disable=invalid-name
 
@@ -85,6 +88,7 @@ class Client:
             # Receive 16 bytes (size of length prefix).
             bdata, addr = sock.recvfrom(16)
             data = bdata.decode("ascii")
+            logging.info("%s: %s", self.channel, data)
 
             # If the data is from a valid sender.
             if addr in (self.target, self.master):
