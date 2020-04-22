@@ -42,10 +42,6 @@ def init() -> None:
     with open(config_path, "r") as config_file:
         config = json.load(config_file)
 
-    # Get connection information from ``config``.
-    server_ip: str = config["server_ip"]
-    port: int = config["port"]
-
     # Per-host config dictionaries.
     host_config = {}
     for hostname in hosts:
@@ -76,6 +72,11 @@ def init() -> None:
         # The ``out_queue`` sends data going to the remote node.
         out_queue: mp.Queue = mp.Queue()
         cellar.HEAD_QUEUES[hostname] = out_queue
+
+        # Get connection information from ``config``.
+        # TODO: Don't use ``port`` for two different things.
+        server_ip: str = config["server_ip"]
+        port: int = config["port"]
 
         # We use the hostname as the channel.
         leader = Client(server_ip, port, hostname, in_funnel, out_queue)
