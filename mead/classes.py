@@ -96,27 +96,6 @@ def extract(pipe_id: str, out_queue: mp.Queue, extraction_spout: Connection) -> 
         out_queue.put(parcel)
 
 
-# pylint: disable=invalid-name
-def Pipe() -> Tuple[Funnel, Spout]:
-    """ Creates a ``mead.Pipe`` pair. """
-
-    # Get a unique pipe id.
-    pipe_id = str(cellar.PIPE_COUNTER)
-    cellar.USED_PIPE_IDS.add(pipe_id)
-    cellar.PIPE_COUNTER += 1
-
-    # Create internal multiprocessing pipe.
-    _funnel, _spout = mp.Pipe()
-    cellar.INTERNAL_FUNNELS[pipe_id] = _funnel
-    cellar.INTERNAL_SPOUTS[pipe_id] = _spout
-
-    # Create mead funnel and spout.
-    funnel = Funnel(pipe_id, _funnel)
-    spout = Spout(pipe_id, _spout)
-
-    return funnel, spout
-
-
 class Parcel:
     """ An object to carry an arbitrary python object with an identifier. """
 
@@ -150,3 +129,24 @@ class Spout:
         data = self._spout.recv()
         assert not isinstance(data, Parcel)
         return data
+
+
+# pylint: disable=invalid-name
+def Pipe() -> Tuple[Funnel, Spout]:
+    """ Creates a ``mead.Pipe`` pair. """
+
+    # Get a unique pipe id.
+    pipe_id = str(cellar.PIPE_COUNTER)
+    cellar.USED_PIPE_IDS.add(pipe_id)
+    cellar.PIPE_COUNTER += 1
+
+    # Create internal multiprocessing pipe.
+    _funnel, _spout = mp.Pipe()
+    cellar.INTERNAL_FUNNELS[pipe_id] = _funnel
+    cellar.INTERNAL_SPOUTS[pipe_id] = _spout
+
+    # Create mead funnel and spout.
+    funnel = Funnel(pipe_id, _funnel)
+    spout = Spout(pipe_id, _spout)
+
+    return funnel, spout
