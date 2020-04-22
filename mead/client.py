@@ -106,6 +106,7 @@ class Client:
                     continue
 
                 # Pickle and send the object.
+                print("DEBUG: bdata before unpickle:", bdata)
                 obj = pickle.loads(bdata)
                 self.in_funnel.send(obj)
 
