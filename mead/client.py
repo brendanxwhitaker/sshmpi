@@ -102,6 +102,8 @@ class Client:
                 # TODO: Handle case when data cannot be cast to int.
                 length = int(data)
 
+                logging.info("%s length: %d", self.channel, length)
+
                 # Receive the object.
                 bdata, addr = sock.recvfrom(length)
 
@@ -110,7 +112,7 @@ class Client:
                     continue
 
                 # Pickle and send the object.
-                print("DEBUG: bdata before unpickle:", bdata)
+                logging.info("DEBUG: bdata before unpickle: %s", str(bdata))
                 obj = pickle.loads(bdata)
                 self.in_funnel.send(obj)
 
