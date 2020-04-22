@@ -114,7 +114,11 @@ class Client:
 
                 # Pickle and send the object.
                 logging.info("DEBUG: bdata before unpickle: %s", str(bdata))
-                obj = pickle.loads(bdata)
+                try:
+                    obj = pickle.loads(bdata)
+                except Exception as err:
+                    loging.info("ERR: %s", str(err))
+                    raise err
                 logging.info("DEBUG: obj: %s", str(obj))
                 self.in_funnel.send(obj)
 

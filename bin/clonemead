@@ -8,7 +8,7 @@ do
 done
 for node in "${nodes[@]}"
 do
-    ssh $node "update_hostsfile && pkill -e spout && rm remote.log" &
+    ssh $node "update_hostsfile && pkill -e meadclient && rm mead.log" &
 done
 for node in "${nodes[@]}"
 do
