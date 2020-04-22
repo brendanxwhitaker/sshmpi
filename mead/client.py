@@ -102,13 +102,14 @@ class Client:
                 # TODO: Handle case when data cannot be cast to int.
                 length = int(data)
 
-                logging.info("%s length: %d", self.channel, length)
+                logging.info("%s: length: %d", self.channel, length)
 
                 # Receive the object.
                 bdata, addr = sock.recvfrom(length)
 
                 # Abort if the sender changed.
                 if addr not in (self.target, self.master):
+                    logging.info("%s: sender address changed.", self.channel)
                     continue
 
                 # Pickle and send the object.
@@ -123,6 +124,8 @@ class Client:
 
             # Serialize in bytes as a length-message pair.
             pair: bytes = get_length_message_pair(obj)
+
+            logging.info("%s: sending pair: %s", self.channel, str(pair))
 
             # Send to target client.
             sock.sendto(pair, self.target)
