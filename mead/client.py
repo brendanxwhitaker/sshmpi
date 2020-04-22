@@ -123,6 +123,9 @@ class Client:
                     logging.info("ERR: %s", str(err))
                     raise err
                 logging.info("DEBUG: obj: %s", str(obj))
+                if isinstance(obj, Process):
+                    self.in_funnel.send(bdata)
+                    continue
                 try:
                     self.in_funnel.send(obj)
                 except Exception as err:
@@ -221,7 +224,12 @@ def remote(server_ip: str, port: int, channel: str) -> None:
         logging.info("REMOTE: waiting on inspout.")
 
         # Assume obj is already unpickled.
-        obj = in_spout.recv()
+        bprocess = in_spout.recv()
+        try:
+            obj = dill.loads(bprocess)
+        except Exception as err:
+            logging.info("ERR: %s", str(err))
+            raise err
 
         logging.info("REMOTE: received obj: %s", obj)
         if not isinstance(obj, Process):
