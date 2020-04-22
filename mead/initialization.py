@@ -55,7 +55,7 @@ def init() -> None:
 
     # Command string format arguments are in ``host_args``.
     host_args = [(config["server_ip"], config["port"], hostname) for hostname in hosts]
-    # output = sshclient.run_command("meadclient %s %s %s", host_args=host_args)
+    output = sshclient.run_command("meadclient %s %s %s", host_args=host_args)
 
     # Create and start the head node clients.
     head_processes: Dict[str, mp.Process] = {}
