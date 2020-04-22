@@ -1,5 +1,6 @@
 """ Classes for node-to-node communication over UDP. """
 import random
+import logging
 from typing import Tuple, Dict, Optional, Any, Callable
 
 import multiprocessing as mp
@@ -82,6 +83,7 @@ def inject(in_spout: Connection, injection_funnels: Dict[str, Connection]) -> No
     """ Receives data from the client and forwards it to a local process. """
     while 1:
         parcel = in_spout.recv()
+        logging.info("INJECTION: parcel: %s", str(parcel))
         assert isinstance(parcel, Parcel)
         assert not isinstance(parcel.obj, Parcel)
         injection_funnels[parcel.pipe_id].send(parcel.obj)
