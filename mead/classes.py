@@ -25,8 +25,7 @@ class Process:
         self.args: Tuple[Any, ...]
         self.kwargs: Dict[str, Any]
         if self.hostname == "":
-            hostname = random.choice(cellar.HOSTNAMES)
-            print("DEBUG: hostname:", hostname)
+            self.hostname = random.choice(cellar.HOSTNAMES)
         if args:
             self.args = args
         else:
