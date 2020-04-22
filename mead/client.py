@@ -118,7 +118,7 @@ class Client:
                 try:
                     obj = pickle.loads(bdata)
                 except Exception as err:
-                    loging.info("ERR: %s", str(err))
+                    logging.info("ERR: %s", str(err))
                     raise err
                 logging.info("DEBUG: obj: %s", str(obj))
                 self.in_funnel.send(obj)
