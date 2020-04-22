@@ -113,10 +113,10 @@ class Client:
                     continue
 
                 # Pickle and send the object.
-                obj = pickle.loads(bdata)
-                self.in_funnel.send(obj)
                 logging.info("DEBUG: bdata before unpickle: %s", str(bdata))
+                obj = pickle.loads(bdata)
                 logging.info("DEBUG: obj: %s", str(obj))
+                self.in_funnel.send(obj)
 
     def send_msg(self, sock: socket.socket) -> None:
         """ Send message callback. """
