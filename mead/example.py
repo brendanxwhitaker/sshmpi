@@ -36,3 +36,7 @@ def main() -> None:
     while i < 1000:
         in_funnel.send(i)
         i = out_spout.recv()
+
+
+if __name__ == "__main__":
+    main()
