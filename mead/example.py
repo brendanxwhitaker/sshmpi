@@ -16,9 +16,6 @@ def main() -> None:
     in_funnel, in_spout = mead.Pipe()
     out_funnel, out_spout = mead.Pipe()
 
-    # TODO: Change over to queue for anything where we have multiple producers
-    # or consumers.
-
     # When you instantiate a mead pipe, it instantiates a multiprocessing pipe
     # in its ``__init__`` function. It stores both ends of this internal pipe
     # inside a global storage module in mead. When you instantiate a

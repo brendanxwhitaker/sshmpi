@@ -52,14 +52,14 @@ def init() -> None:
         _, _, port, _ = read_openssh_config(hostname)
         host_config[hostname] = {"port": port}
 
-    # Start the client.
+    # Start the ssh client.
     init_delay = 2
     localhost = socket.gethostname()
-    client = ParallelSSHClient(hosts, host_config=host_config, pkey=pkey)
+    sshclient = ParallelSSHClient(hosts, host_config=host_config, pkey=pkey)
 
     # Command string format arguments are in ``host_args``.
     host_args = [(config["server_ip"], config["port"], hostname) for hostname in hosts]
-    output = client.run_command("meadclient %s %s %s", host_args=host_args)
+    output = sshclient.run_command("meadclient %s %s %s", host_args=host_args)
 
     # Create and start the head node clients.
     head_processes: Dict[str, mp.Process] = {}
@@ -73,12 +73,12 @@ def init() -> None:
         # need to run ``mead.init()`` first if they try to start a
         # ``mead.Process``.
 
-        # The ``out_funnel`` sends data going to the remote node.
-        out_funnel, out_spout = mp.Pipe()
-        cellar.HEAD_FUNNELS[hostname] = out_funnel
+        # The ``out_queue`` sends data going to the remote node.
+        out_queue: mp.Queue = mp.Queue()
+        cellar.HEAD_QUEUES[hostname] = out_queue
 
         # We use the hostname as the channel.
-        leader = Client(server_ip, port, hostname, in_funnel, out_spout)
+        leader = Client(server_ip, port, hostname, in_funnel, out_queue)
         p_client = mp.Process(target=leader.main)
         p_client.start()
 

@@ -30,7 +30,6 @@ class Process:
             self.args = args
         else:
             self.args = ()
-            # self.args = ()  # type: ignore[assignment]
         if kwargs:
             self.kwargs = kwargs
         else:
@@ -43,7 +42,7 @@ class Process:
         hostname = self.hostname
 
         # Send an instruction to start ``self: mead.Process`` on remote.
-        cellar.HEAD_FUNNELS[hostname].send(self)
+        cellar.HEAD_QUEUES[hostname].put(self)
 
         # Aggregate the pipes from ``cellar`` which were passed to ``mead.Process``.
         injection_funnels: Dict[str, Connection] = {}
@@ -73,36 +72,28 @@ class Process:
         # Create and start the extraction processes.
         extraction_processes: Dict[str, mp.Process] = {}
         for pipe_id, extraction_spout in extraction_spouts.items():
-            extract_args = (pipe_id, cellar.HEAD_FUNNELS[hostname], extraction_spout)
+            extract_args = (pipe_id, cellar.HEAD_QUEUES[hostname], extraction_spout)
             p_extract = mp.Process(target=extract, args=extract_args)
             p_extract.start()
             extraction_processes[pipe_id] = p_extract
 
 
-class Parcel:
-    """ An object to carry an arbitrary python object with an identifier. """
-
-    def __init__(self, pipe_id: str, obj: Any):
-        self.pipe_id = pipe_id
-        self.obj = obj
-
-
 def inject(in_spout: Connection, injection_funnels: Dict[str, Connection]) -> None:
     """ Receives data from the client and forwards it to a local process. """
     while 1:
-        obj = in_spout.recv()
-        if isinstance(obj, Parcel):
-            parcel = obj
-            injection_funnels[parcel.pipe_id].send(parcel.obj)
+        parcel = in_spout.recv()
+        assert isinstance(parcel, Parcel)
+        assert not isinstance(parcel.obj, Parcel)
+        injection_funnels[parcel.pipe_id].send(parcel.obj)
 
 
-# TODO: This ``out_funnel`` has multiple producers. Use a queue.
-def extract(pipe_id: str, out_funnel: Connection, extraction_spout: Connection) -> None:
+def extract(pipe_id: str, out_queue: mp.Queue, extraction_spout: Connection) -> None:
     """ Receives data from a local process and forwards it to the client. """
     while 1:
         obj = extraction_spout.recv()
+        assert not isinstance(obj, Parcel)
         parcel = Parcel(pipe_id, obj)
-        out_funnel.send(parcel)
+        out_queue.put(parcel)
 
 
 # pylint: disable=invalid-name
@@ -119,11 +110,19 @@ def Pipe() -> Tuple[Funnel, Spout]:
     cellar.INTERNAL_FUNNELS[pipe_id] = _funnel
     cellar.INTERNAL_SPOUTS[pipe_id] = _spout
 
-    # Create funnel and spout.
+    # Create mead funnel and spout.
     funnel = Funnel(pipe_id, _funnel)
     spout = Spout(pipe_id, _spout)
 
     return funnel, spout
+
+
+class Parcel:
+    """ An object to carry an arbitrary python object with an identifier. """
+
+    def __init__(self, pipe_id: str, obj: Any):
+        self.pipe_id = pipe_id
+        self.obj = obj
 
 
 class Funnel:
@@ -135,6 +134,7 @@ class Funnel:
 
     def send(self, data: Any) -> None:
         """ Send data (presumably to a remote node). """
+        assert not isinstance(data, Parcel)
         self._funnel.send(data)
 
 
@@ -147,4 +147,6 @@ class Spout:
 
     def recv(self) -> Any:
         """ Receive data (presumably from a remote node). """
-        return self._spout.recv()
+        data = self._spout.recv()
+        assert not isinstance(data, Parcel)
+        return data

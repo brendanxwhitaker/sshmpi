@@ -5,6 +5,7 @@ import sys
 import time
 import socket
 import struct
+import pickle
 from typing import Tuple, Callable, Dict, List, Any
 from threading import Thread
 
@@ -12,6 +13,7 @@ import multiprocessing as mp
 from multiprocessing.connection import Connection
 
 from mead.classes import Process, Funnel, Spout, inject, extract
+from mead.translation import get_length_message_pair
 
 # pylint: disable=invalid-name
 
@@ -23,7 +25,6 @@ UnknownNAT = "Unknown NAT"  # 4
 NATTYPE = (FullCone, RestrictNAT, RestrictPortNAT, SymmetricNAT, UnknownNAT)
 
 
-# TODO: Add pickling.
 class Client:
     """ The UDP client for interacting with the server and other Clients. """
 
@@ -32,8 +33,8 @@ class Client:
         server_ip: str,
         port: int,
         channel: str,
-        funnel: Connection,
-        spout: Connection,
+        in_funnel: Connection,
+        out_queue: mp.Queue,
     ) -> None:
         self.master = (server_ip, port)
         self.channel = channel
@@ -43,8 +44,8 @@ class Client:
         self.target: Tuple[str, int] = ("", 0)
         self.peer_nat_type = ""
 
-        self.funnel = funnel
-        self.spout = spout
+        self.in_funnel = in_funnel
+        self.out_queue = out_queue
 
     def request_for_connection(self, nat_type_id: str = "0") -> None:
         """ Send a request to the server for a connection. """
@@ -80,17 +81,38 @@ class Client:
     def recv_msg(self, sock: socket.socket) -> None:
         """ Receive message callback. """
         while True:
-            data_bytes, addr = sock.recvfrom(1024)
-            data = data_bytes.decode("ascii")
+            # Receive 16 bytes (size of length prefix).
+            bdata, addr = sock.recvfrom(16)
+            data = bdata.decode("ascii")
+
+            # If the data is from a valid sender.
             if addr in (self.target, self.master):
-                self.funnel.send(data)
+
+                # Parse the message length bytes.
+                # TODO: Handle case when data cannot be cast to int.
+                length = int(data)
+
+                # Receive the object.
+                bdata, addr = sock.recvfrom(length)
+
+                # Abort if the sender changed.
+                if addr not in (self.target, self.master):
+                    continue
+
+                # Pickle and send the object.
+                obj = pickle.loads(bdata)
+                self.in_funnel.send(obj)
 
     def send_msg(self, sock: socket.socket) -> None:
         """ Send message callback. """
         while True:
-            data = self.spout.recv()
-            data_bytes = data.encode("ascii")
-            sock.sendto(data_bytes, self.target)
+            obj = self.out_queue.get()
+
+            # Serialize in bytes as a length-message pair.
+            pair: bytes = get_length_message_pair(obj)
+
+            # Send to target client.
+            sock.sendto(pair, self.target)
 
     @staticmethod
     def chat_fullcone(
@@ -143,11 +165,11 @@ def remote(server_ip: str, port: int, channel: str) -> None:
     # The ``in_spout`` receives data coming from the head node.
     in_funnel, in_spout = mp.Pipe()
 
-    # The ``out_funnel`` sends data going to the head node.
-    out_funnel, out_spout = mp.Pipe()
+    # The ``out_queue`` sends data going to the head node.
+    out_queue: mp.Queue = mp.Queue()
 
     # Create and start the client.
-    c = Client(server_ip, port, channel, in_funnel, out_spout)
+    c = Client(server_ip, port, channel, in_funnel, out_queue)
     p_client = mp.Process(target=c.main)
     p_client.start()
 
@@ -208,7 +230,7 @@ def remote(server_ip: str, port: int, channel: str) -> None:
             extraction_processes: Dict[str, mp.Process] = {}
             for pipe_id, extraction_spout in extraction_spouts.items():
                 p_extract = mp.Process(
-                    target=extract, args=(pipe_id, out_funnel, extraction_spout)
+                    target=extract, args=(pipe_id, out_queue, extraction_spout)
                 )
                 p_extract.start()
                 extraction_processes[pipe_id] = p_extract
