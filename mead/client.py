@@ -128,7 +128,6 @@ class Client:
             logging.info("%s: sending pair: %s", self.channel, str(pair))
 
             # Send to target client.
-            sock.sendto(pair, self.target)
             sock.sendto(pair[:16], self.target)
             sock.sendto(pair[16:], self.target)
 
