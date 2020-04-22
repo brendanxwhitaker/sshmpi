@@ -124,6 +124,7 @@ class Client:
                     raise err
                 logging.info("DEBUG: obj: %s", str(obj))
                 self.in_funnel.send(obj)
+                logging.info("DEBUG: sent obj.")
 
     def send_msg(self, sock: socket.socket) -> None:
         """ Send message callback. """
@@ -213,6 +214,7 @@ def remote(server_ip: str, port: int, channel: str) -> None:
 
     # Wait until we get an instruction to start a mead.Process.
     while 1:
+        logging.info("REMOTE: waiting on inspout.")
 
         # Assume obj is already unpickled.
         obj = in_spout.recv()

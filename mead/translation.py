@@ -4,7 +4,7 @@ import dill
 
 def get_length_message_pair(obj: object) -> bytes:
     """ Pickles an object and returns bytes of a length+message pair. """
-    message = dill.dumps(obj)
+    message: bytes = dill.dumps(obj)
 
     # Get representation of then length of ``message`` in bytes.
     length = str(len(message)).encode("ascii")
