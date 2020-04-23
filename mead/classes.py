@@ -6,6 +6,7 @@ from typing import Tuple, Dict, Optional, Any, Callable
 import multiprocessing as mp
 from multiprocessing.connection import Connection
 
+import dill
 from mead import cellar
 
 # pylint: disable=too-few-public-methods
@@ -86,7 +87,8 @@ def inject(in_spout: Connection, injection_funnels: Dict[str, Connection]) -> No
     """ Receives data from the client and forwards it to a local process. """
     while 1:
         logging.info("INJECTION: waiting.")
-        parcel = in_spout.recv()
+        bparcel = in_spout.recv()
+        parcel = dill.loads(bparcel)
         logging.info("INJECTION: parcel: %s", str(parcel))
         if not isinstance(parcel, Parcel):
             logging.info("INJECTION: Error: obj not a Parcel: %s", str(parcel))
