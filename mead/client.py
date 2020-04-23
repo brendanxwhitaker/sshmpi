@@ -14,10 +14,18 @@ from multiprocessing.connection import Connection
 
 import dill
 
-from mead.classes import Process, Funnel, Spout, inject, extract
+from mead.classes import (
+    _Process,
+    _Funnel,
+    _Spout,
+    inject,
+    extract,
+)
 from mead.translation import get_length_message_pair
 
 logging.basicConfig(filename="client.log", level=logging.DEBUG)
+handler = logging.StreamHandler(sys.stdout)
+logging.getLogger().addHandler(handler)
 
 # pylint: disable=invalid-name
 
@@ -224,21 +232,15 @@ def remote(server_ip: str, port: int, channel: str) -> None:
 
         # Assume obj is already unpickled.
         bprocess = in_spout.recv()
-        try:
-            obj = dill.loads(bprocess)
-        except Exception as err:
-            logging.info("ERR: %s", str(err))
-            raise err
+        obj = dill.loads(bprocess)
 
         logging.info("REMOTE: received obj: %s", obj)
-        if not isinstance(obj, Process):
-            logging.info("ERR: obj not Process: %s", obj)
+        if not isinstance(obj, _Process):
+            logging.info("ERR: obj not _Process: %s", obj)
 
         # If we're sent a mead process to run.
-        if isinstance(obj, Process):
+        if isinstance(obj, _Process):
             p = obj
-            btarget = in_spout.recv()
-            target = dill.loads(btarget)
 
             # Create pipes to communicate with injection/extraction processes.
             injection_funnels: Dict[str, Connection] = {}
@@ -247,25 +249,31 @@ def remote(server_ip: str, port: int, channel: str) -> None:
             # Iterate over the arguments, replacing mead pipes with mp pipes.
             mp_args: List[Any] = []
             for arg in p.args:
-                if isinstance(arg, Funnel):
+                if isinstance(arg, _Funnel):
                     funnel, spout = mp.Pipe()
                     extraction_spouts[arg.pipe_id] = spout
                     mp_args.append(funnel)
-                elif isinstance(arg, Spout):
+                    del funnel
+                    del spout
+                elif isinstance(arg, _Spout):
                     funnel, spout = mp.Pipe()
+                    logging.info("REMOTE: adding injection funnel with pipe id: %s", arg.pipe_id)
+                    logging.info("REMOTE: adding spout to mp args: %s", str(spout))
                     injection_funnels[arg.pipe_id] = funnel
                     mp_args.append(spout)
+                    del funnel
+                    del spout
                 else:
                     mp_args.append(arg)
 
             # Iterate over the keyword arguments, replacing mead pipes with mp pipes.
             mp_kwargs: Dict[str, Any] = {}
             for name, arg in p.kwargs.items():
-                if isinstance(arg, Funnel):
+                if isinstance(arg, _Funnel):
                     funnel, spout = mp.Pipe()
                     extraction_spouts[arg.pipe_id] = spout
                     mp_kwargs[name] = funnel
-                elif isinstance(arg, Spout):
+                elif isinstance(arg, _Spout):
                     funnel, spout = mp.Pipe()
                     injection_funnels[arg.pipe_id] = funnel
                     mp_kwargs[name] = spout
@@ -273,16 +281,11 @@ def remote(server_ip: str, port: int, channel: str) -> None:
                     mp_kwargs[name] = arg
 
             logging.info("REMOTE: starting user processes.")
+            logging.info("REMOTE: injection funnels: %s:", str(injection_funnels))
+            logging.info("REMOTE: mpargs: %s:", str(mp_args))
 
-            try:
-                # Construct and start the user's process.
-                p_user = mp.Process(
-                    target=target, args=tuple(mp_args), kwargs=mp_kwargs
-                )
-                p_user.start()
-            except Exception as err:
-                logging.info("ERR: %s", str(err))
-                raise err
+            p_user = mp.Process(target=p.target, args=tuple(mp_args), kwargs=mp_kwargs)
+            p_user.start()
 
             # Create and start the injection process.
             p_inject = mp.Process(target=inject, args=(in_spout, injection_funnels))

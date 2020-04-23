@@ -1,7 +1,7 @@
 """ Classes for node-to-node communication over UDP. """
 import random
 import logging
-from typing import Tuple, Dict, Optional, Any, Callable
+from typing import Tuple, Dict, Optional, Any, Callable, List
 
 import multiprocessing as mp
 from multiprocessing.connection import Connection
@@ -10,6 +10,32 @@ import dill
 from mead import cellar
 
 # pylint: disable=too-few-public-methods
+
+
+class _Spout:
+    def __init__(self, pipe_id: str):
+        self.pipe_id = pipe_id
+
+
+class _Funnel:
+    def __init__(self, pipe_id: str):
+        self.pipe_id = pipe_id
+
+
+class _Process:
+    """ An analogue of ``mp.Process`` for mead serialization. """
+
+    def __init__(
+        self,
+        target: Callable[..., Any],
+        hostname: str,
+        args: Optional[Tuple[Any, ...]],
+        kwargs: Optional[Dict[str, Any]],
+    ):
+        self.hostname: str = hostname
+        self.target: Callable[..., Any] = target
+        self.args: Tuple[Any, ...] = args
+        self.kwargs: Dict[str, Any] = kwargs
 
 
 class Process:
@@ -43,9 +69,34 @@ class Process:
         """ Runs client on head node. Called by ``mp.Process``. """
         hostname = self.hostname
 
+        # Iterate over the arguments, replacing mead pipes with mp pipes.
+        mp_args: List[Any] = []
+        for arg in self.args:
+            if isinstance(arg, Funnel):
+                funnel = _Funnel(arg.pipe_id)
+                mp_args.append(funnel)
+            elif isinstance(arg, Spout):
+                spout = _Spout(arg.pipe_id)
+                mp_args.append(spout)
+            else:
+                mp_args.append(arg)
+
+        # Iterate over the keyword arguments, replacing mead pipes with mp pipes.
+        mp_kwargs: Dict[str, Any] = {}
+        for name, arg in self.kwargs.items():
+            if isinstance(arg, Funnel):
+                funnel = _Funnel(arg.pipe_id)
+                mp_kwargs[name] = funnel
+            elif isinstance(arg, Spout):
+                spout = _Spout(arg.pipe_id)
+                mp_kwargs[name] = spout
+            else:
+                mp_kwargs[name] = arg
+
+        _process = _Process(self.target, self.hostname, mp_args, mp_kwargs)
+
         # Send an instruction to start ``self: mead.Process`` on remote.
-        cellar.HEAD_QUEUES[hostname].put(self)
-        cellar.HEAD_QUEUES[hostname].put(self.target)
+        cellar.HEAD_QUEUES[hostname].put(_process)
 
         # Aggregate the pipes from ``cellar`` which were passed to ``mead.Process``.
         injection_funnels: Dict[str, Connection] = {}
@@ -89,12 +140,12 @@ def inject(in_spout: Connection, injection_funnels: Dict[str, Connection]) -> No
         logging.info("INJECTION: waiting.")
         bparcel = in_spout.recv()
         parcel = dill.loads(bparcel)
-        logging.info("INJECTION: parcel: %s", str(parcel))
         if not isinstance(parcel, Parcel):
             logging.info("INJECTION: Error: obj not a Parcel: %s", str(parcel))
 
         assert isinstance(parcel, Parcel)
         assert not isinstance(parcel.obj, Parcel)
+        logging.info("INJECTION: parcel: %s to pipe id: %s", str(parcel), parcel.pipe_id)
         injection_funnels[parcel.pipe_id].send(parcel.obj)
 
 

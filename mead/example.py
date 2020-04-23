@@ -5,7 +5,9 @@ import mead
 def augment(funnel: mead.Funnel, spout: mead.Spout) -> None:
     """ Augments an integer. """
     while 1:
+        print("LIQUID waiting.")
         liquid = spout.recv()
+        print("LIQUID got.")
         liquid += 1
         funnel.send(liquid)
 
@@ -29,7 +31,7 @@ def main() -> None:
 
     # A ``mead.Process`` runs on exactly one (remote) node.
 
-    p = mead.Process(target=augment, args=(in_spout, out_funnel))
+    p = mead.Process(target=augment, args=(out_funnel, in_spout))
     p.start()
 
     i = 0
