@@ -27,7 +27,8 @@ def get_nodes() -> List[str]:
 def init() -> None:
     """ Public-facing API for SSHMPI initialization. """
     # Get hostnames of remote nodes.
-    hosts = get_available_hostnames_from_sshconfig()
+    # hosts = get_available_hostnames_from_sshconfig()
+    hosts = ["127.0.0.1"]
     cellar.HOSTNAMES = hosts
     print("Hosts:", hosts)
 
@@ -44,9 +45,11 @@ def init() -> None:
 
     # Per-host config dictionaries.
     host_config = {}
+    """
     for hostname in hosts:
         _, _, port, _ = read_openssh_config(hostname)
         host_config[hostname] = {"port": port}
+    """
 
     # Start the ssh client.
     init_delay = 2
@@ -55,7 +58,7 @@ def init() -> None:
 
     # Command string format arguments are in ``host_args``.
     host_args = [(config["server_ip"], config["port"], hostname) for hostname in hosts]
-    #output = sshclient.run_command("meadclient %s %s %s", host_args=host_args)
+    # output = sshclient.run_command("meadclient %s %s %s", host_args=host_args)
 
     # Create and start the head node clients.
     head_processes: Dict[str, mp.Process] = {}
