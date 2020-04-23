@@ -4,17 +4,22 @@ import mead
 
 def augment(funnel: mead.Funnel, spout: mead.Spout) -> None:
     """ Augments an integer. """
+    # TODO: Dill the whole interpreter session during ``init()`` call so that
+    # imports are all defined properly.
+    import time
+
+    t = time.time()
     while 1:
-        print("LIQUID waiting.")
+        print("Loop: %f" % (time.time() - t))
+        t = time.time()
         liquid = spout.recv()
-        print("LIQUID got.")
         liquid += 1
         funnel.send(liquid)
 
 
 def main() -> None:
     """ Runs a simple example of ``mead`` usage. """
-    mead.init()
+    mead.init("local.json")
     in_funnel, in_spout = mead.Pipe()
     out_funnel, out_spout = mead.Pipe()
 
@@ -35,7 +40,7 @@ def main() -> None:
     p.start()
 
     i = 0
-    while i < 1000:
+    while i < 100000:
         in_funnel.send(i)
         i = out_spout.recv()
 

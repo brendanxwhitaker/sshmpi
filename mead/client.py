@@ -23,9 +23,9 @@ from mead.classes import (
 )
 from mead.translation import get_length_message_pair
 
-logging.basicConfig(filename="client.log", level=logging.DEBUG)
-handler = logging.StreamHandler(sys.stdout)
-logging.getLogger().addHandler(handler)
+logging.basicConfig(filename="mead.log", level=logging.DEBUG)
+logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+logging.disable(level=logging.CRITICAL)  # type: ignore[call-arg]
 
 # pylint: disable=invalid-name
 
@@ -66,7 +66,6 @@ class Client:
 
         # Send channel and NAT type to server, requesting a connection.
         msg = (self.channel + " {0}".format(nat_type_id)).encode("ascii")
-        print("DEBUG: self.master:", self.master)
         self.sockfd.sendto(msg, self.master)
 
         # Wait for ``ok``, acknowledgement of request.
@@ -104,11 +103,12 @@ class Client:
 
                 # Handle timeout refresh tokens.
                 if data == "refresh":
-                    print("DEBUG: received refresh token.")
+                    logging.info("DEBUG: received refresh token.")
                     continue
 
                 # Parse the message length bytes.
-                # TODO: Handle case when data cannot be cast to int.
+                if not data.isnumeric():
+                    continue
                 length = int(data)
 
                 logging.info("%s: length: %d", self.channel, length)
@@ -192,26 +192,8 @@ def bytes2addr(bytes_address: bytes) -> Tuple[Tuple[str, int], int]:
     return target, nat_type_id
 
 
-class Writer:
-    def __init__(self):
-        self.orig = sys.stdout
-        self.out = open("global.log", "w")
-
-    def write(self, data):
-        self.out.write(data)
-        self.orig.write(data)
-
-    def flush(self):
-        self.orig.flush()
-
-
 def remote(server_ip: str, port: int, channel: str) -> None:
     """ Runs the client for a remote worker. """
-
-    logger = Writer()
-    sys.stdout = logger
-    sys.stderr = logger
-
     # The ``in_spout`` receives data coming from the head node.
     in_funnel, in_spout = mp.Pipe()
 
@@ -257,7 +239,9 @@ def remote(server_ip: str, port: int, channel: str) -> None:
                     del spout
                 elif isinstance(arg, _Spout):
                     funnel, spout = mp.Pipe()
-                    logging.info("REMOTE: adding injection funnel with pipe id: %s", arg.pipe_id)
+                    logging.info(
+                        "REMOTE: adding injection funnel with pipe id: %s", arg.pipe_id
+                    )
                     logging.info("REMOTE: adding spout to mp args: %s", str(spout))
                     injection_funnels[arg.pipe_id] = funnel
                     mp_args.append(spout)
