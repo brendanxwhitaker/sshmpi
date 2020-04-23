@@ -238,7 +238,7 @@ def remote(server_ip: str, port: int, channel: str) -> None:
         if isinstance(obj, Process):
             p = obj
             btarget = in_spout.recv()
-            target = dill.loads(bprocess)
+            target = dill.loads(btarget)
 
             # Create pipes to communicate with injection/extraction processes.
             injection_funnels: Dict[str, Connection] = {}
