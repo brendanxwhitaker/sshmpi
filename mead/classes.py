@@ -74,6 +74,8 @@ class Process:
         # Create and start the extraction processes.
         extraction_processes: Dict[str, mp.Process] = {}
         for pipe_id, extraction_spout in extraction_spouts.items():
+
+            logging.info("START: extracting from pipe: %s", pipe_id)
             extract_args = (pipe_id, cellar.HEAD_QUEUES[hostname], extraction_spout)
             p_extract = mp.Process(target=extract, args=extract_args)
             p_extract.start()
@@ -123,6 +125,7 @@ class Funnel:
         """ Send data (presumably to a remote node). """
         assert not isinstance(data, Parcel)
         logging.info("FUNNEL: data: %s", str(data))
+        logging.info("FUNNEL: pipe id: %s", self.pipe_id)
         self._funnel.send(data)
 
 
