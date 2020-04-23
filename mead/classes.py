@@ -44,6 +44,7 @@ class Process:
 
         # Send an instruction to start ``self: mead.Process`` on remote.
         cellar.HEAD_QUEUES[hostname].put(self)
+        cellar.HEAD_QUEUES[hostname].put(self.target)
 
         # Aggregate the pipes from ``cellar`` which were passed to ``mead.Process``.
         injection_funnels: Dict[str, Connection] = {}
