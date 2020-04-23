@@ -277,7 +277,7 @@ def remote(server_ip: str, port: int, channel: str) -> None:
             try:
                 # Construct and start the user's process.
                 p_user = mp.Process(
-                    target=p.target, args=tuple(mp_args), kwargs=mp_kwargs
+                    target=target, args=tuple(mp_args), kwargs=mp_kwargs
                 )
                 p_user.start()
             except Exception as err:
