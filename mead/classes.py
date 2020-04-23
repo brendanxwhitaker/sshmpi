@@ -52,19 +52,19 @@ class Process:
 
         for arg in self.args:
             if isinstance(arg, Funnel):
-                _spout = cellar.INTERNAL_SPOUTS[arg.pipe_id]
-                extraction_spouts[arg.pipe_id] = _spout
-            elif isinstance(arg, Spout):
                 _funnel = cellar.INTERNAL_FUNNELS[arg.pipe_id]
                 injection_funnels[arg.pipe_id] = _funnel
+            elif isinstance(arg, Spout):
+                _spout = cellar.INTERNAL_SPOUTS[arg.pipe_id]
+                extraction_spouts[arg.pipe_id] = _spout
 
         for _name, arg in self.kwargs:
             if isinstance(arg, Funnel):
-                _spout = cellar.INTERNAL_SPOUTS[arg.pipe_id]
-                extraction_spouts[arg.pipe_id] = _spout
-            elif isinstance(arg, Spout):
                 _funnel = cellar.INTERNAL_FUNNELS[arg.pipe_id]
                 injection_funnels[arg.pipe_id] = _funnel
+            elif isinstance(arg, Spout):
+                _spout = cellar.INTERNAL_SPOUTS[arg.pipe_id]
+                extraction_spouts[arg.pipe_id] = _spout
 
         # Create and start the injection process.
         inject_args = (cellar.HEAD_SPOUTS[hostname], injection_funnels)
