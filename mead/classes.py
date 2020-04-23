@@ -140,7 +140,9 @@ class Spout:
 
     def recv(self) -> Any:
         """ Receive data (presumably from a remote node). """
+        logging.info("SPOUT: waiting.")
         data = self._spout.recv()
+        logging.info("SPOUT: data: %s", str(data))
         assert not isinstance(data, Parcel)
         return data
 
