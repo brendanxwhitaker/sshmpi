@@ -184,8 +184,23 @@ def bytes2addr(bytes_address: bytes) -> Tuple[Tuple[str, int], int]:
     return target, nat_type_id
 
 
+class Writer:
+    def __init__(self):
+        self.orig = sys.stdout
+        self.out = open("global.log", "w")
+    def write(self, data):
+        self.out.write(data)
+        self.orig.write(data)
+    def flush(self):
+        self.orig.flush()
+
+
 def remote(server_ip: str, port: int, channel: str) -> None:
     """ Runs the client for a remote worker. """
+
+    logger = Writer()
+    sys.stdout = logger
+    sys.stderr = logger
 
     # The ``in_spout`` receives data coming from the head node.
     in_funnel, in_spout = mp.Pipe()
@@ -266,9 +281,6 @@ def remote(server_ip: str, port: int, channel: str) -> None:
             except Exception as err:
                 logging.info("ERR: %s", str(err))
                 raise err
-            # Construct and start the user's process.
-            p_user = mp.Process(target=p.target, args=tuple(mp_args), kwargs=mp_kwargs)
-            p_user.start()
 
             # Create and start the injection process.
             p_inject = mp.Process(target=inject, args=(in_spout, injection_funnels))
