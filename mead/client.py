@@ -188,9 +188,11 @@ class Writer:
     def __init__(self):
         self.orig = sys.stdout
         self.out = open("global.log", "w")
+
     def write(self, data):
         self.out.write(data)
         self.orig.write(data)
+
     def flush(self):
         self.orig.flush()
 
@@ -295,4 +297,5 @@ def remote(server_ip: str, port: int, channel: str) -> None:
                 p_extract.start()
                 extraction_processes[pipe_id] = p_extract
 
+            logging.info("REMOTE: break.")
             break

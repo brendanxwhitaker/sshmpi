@@ -83,6 +83,7 @@ class Process:
 def inject(in_spout: Connection, injection_funnels: Dict[str, Connection]) -> None:
     """ Receives data from the client and forwards it to a local process. """
     while 1:
+        logging.info("INJECTION: waiting.")
         parcel = in_spout.recv()
         logging.info("INJECTION: parcel: %s", str(parcel))
         if not isinstance(parcel, Parcel):
@@ -97,6 +98,7 @@ def extract(pipe_id: str, out_queue: mp.Queue, extraction_spout: Connection) -> 
     """ Receives data from a local process and forwards it to the client. """
     while 1:
         obj = extraction_spout.recv()
+        logging.info("EXTRACTION: obj: %s", str(obj))
         assert not isinstance(obj, Parcel)
         parcel = Parcel(pipe_id, obj)
         out_queue.put(parcel)
@@ -120,6 +122,7 @@ class Funnel:
     def send(self, data: Any) -> None:
         """ Send data (presumably to a remote node). """
         assert not isinstance(data, Parcel)
+        logging.info("FUNNEL: data: %s", str(data))
         self._funnel.send(data)
 
 
