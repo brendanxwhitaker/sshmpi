@@ -5,7 +5,6 @@ import sys
 import time
 import socket
 import struct
-import pickle
 import logging
 from typing import Tuple, Callable, Dict, List, Any
 from threading import Thread
@@ -114,24 +113,7 @@ class Client:
                     logging.info("%s: sender address changed.", self.channel)
                     continue
 
-                # Pickle and send the object.
-                logging.info("DEBUG: bdata before unpickle: %s", str(bdata))
-                logging.info("DEBUG: length of bdata: %d", len(bdata))
-                try:
-                    obj = dill.loads(bdata)
-                except Exception as err:
-                    logging.info("ERR: %s", str(err))
-                    raise err
-                logging.info("DEBUG: obj: %s", str(obj))
-                if isinstance(obj, Process):
-                    self.in_funnel.send(bdata)
-                    continue
-                try:
-                    self.in_funnel.send(obj)
-                except Exception as err:
-                    logging.info("ERR: %s", str(err))
-                    raise err
-                logging.info("DEBUG: sent obj.")
+                self.in_funnel.send(bdata)
 
     def send_msg(self, sock: socket.socket) -> None:
         """ Send message callback. """
@@ -238,6 +220,8 @@ def remote(server_ip: str, port: int, channel: str) -> None:
         # If we're sent a mead process to run.
         if isinstance(obj, Process):
             p = obj
+            btarget = in_spout.recv()
+            target = dill.loads(bprocess)
 
             # Create pipes to communicate with injection/extraction processes.
             injection_funnels: Dict[str, Connection] = {}
@@ -273,6 +257,15 @@ def remote(server_ip: str, port: int, channel: str) -> None:
 
             logging.info("REMOTE: starting user processes.")
 
+            try:
+                # Construct and start the user's process.
+                p_user = mp.Process(
+                    target=p.target, args=tuple(mp_args), kwargs=mp_kwargs
+                )
+                p_user.start()
+            except Exception as err:
+                logging.info("ERR: %s", str(err))
+                raise err
             # Construct and start the user's process.
             p_user = mp.Process(target=p.target, args=tuple(mp_args), kwargs=mp_kwargs)
             p_user.start()
