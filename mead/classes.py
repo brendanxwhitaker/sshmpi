@@ -1,7 +1,6 @@
 """ Classes for node-to-node communication over UDP. """
-import random
 import logging
-from typing import Tuple, Dict, Optional, Any, Callable, List
+from typing import Tuple, Dict, Optional, Any, Callable, List, Union
 
 import multiprocessing as mp
 from multiprocessing.connection import Connection
@@ -23,14 +22,12 @@ class _Funnel:
 
 
 class _Process:
-    """ An analogue of ``mp.Process`` for mead serialization. """
-
     def __init__(
         self,
         target: Callable[..., Any],
         hostname: str,
-        args: Optional[Tuple[Any, ...]],
-        kwargs: Optional[Dict[str, Any]],
+        args: Tuple[Any, ...],
+        kwargs: Dict[str, Any],
     ):
         self.hostname: str = hostname
         self.target: Callable[..., Any] = target
@@ -53,6 +50,7 @@ class Process:
         self.args: Tuple[Any, ...]
         self.kwargs: Dict[str, Any]
         if self.hostname == "":
+            # TODO: Handle IndexError when HOSTNAMES is empty.
             self.hostname = cellar.HOSTNAMES[-1]
         if args:
             self.args = args
@@ -63,7 +61,17 @@ class Process:
         else:
             self.kwargs = {}
 
-    # TODO: Add functionality for killing a ``mead.Process``.
+    def join(self, timeout: Optional[Union[float, int]] = None) -> None:
+        """ Blocks until the process terminates. """
+        raise NotImplementedError
+
+    def terminate(self) -> None:
+        """ Terminates the process with SIGTERM. """
+        raise NotImplementedError
+
+    def kill(self) -> None:
+        """ Terminates the process with SIGKILL. """
+        raise NotImplementedError
 
     def start(self) -> None:
         """ Runs client on head node. Called by ``mp.Process``. """
@@ -93,7 +101,8 @@ class Process:
             else:
                 mp_kwargs[name] = arg
 
-        _process = _Process(self.target, self.hostname, mp_args, mp_kwargs)
+        # Creata a placeholder process object to hold target and arguments.
+        _process = _Process(self.target, self.hostname, tuple(mp_args), mp_kwargs)
 
         # Send an instruction to start ``self: mead.Process`` on remote.
         cellar.HEAD_QUEUES[hostname].put(_process)
@@ -145,7 +154,9 @@ def inject(in_spout: Connection, injection_funnels: Dict[str, Connection]) -> No
 
         assert isinstance(parcel, Parcel)
         assert not isinstance(parcel.obj, Parcel)
-        logging.info("INJECTION: parcel: %s to pipe id: %s", str(parcel), parcel.pipe_id)
+        logging.info(
+            "INJECTION: parcel: %s to pipe id: %s", str(parcel), parcel.pipe_id
+        )
         injection_funnels[parcel.pipe_id].send(parcel.obj)
 
 

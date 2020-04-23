@@ -2,7 +2,7 @@
 import os
 import json
 import socket
-from typing import List, Dict
+from typing import Dict
 
 import multiprocessing as mp
 
@@ -14,51 +14,40 @@ from mead.client import Client
 from mead.openssh import get_available_hostnames_from_sshconfig
 
 
-# TODO: Use this instead of SSH config to make setup more explicit.
-def get_nodes() -> List[str]:
-    """ Read hostnames of remote nodes. """
-    nodes_path = os.path.expanduser("~/nodes.json")
-    with open(nodes_path, "r") as nodes_file:
-        lines = nodes_file.read().split("\n")
-        print(lines)
-    return lines
 
-
-def init() -> None:
+def init(config_path: str = "~/config.json") -> None:
     """ Public-facing API for SSHMPI initialization. """
+    with open(os.path.expanduser(config_path), "r") as config_file:
+        config = json.load(config_file)
+        server_ip = config["server_ip"]
+        port = config["port"]
+        hosts = config.get("hostnames", [])
+
+    # Per-host config dictionaries.
+    host_config = {}
+
     # Get hostnames of remote nodes.
-    # hosts = get_available_hostnames_from_sshconfig()
-    hosts = ["127.0.0.1"]
+    if not hosts:
+        hosts = get_available_hostnames_from_sshconfig()
+        for hostname in hosts:
+            _, _, remote_port, _ = read_openssh_config(hostname)
+            host_config[hostname] = {"port": remote_port}
+    else:
+        for hostname in hosts:
+            host_config[hostname] = {}
+
     cellar.HOSTNAMES = hosts
     print("Hosts:", hosts)
 
     # Get private key.
     pkey = os.path.expanduser("~/.ssh/id_rsa")
 
-    # Get server hostname.
-    # TODO: User should have to pass in the config path through ``init()`` instead.
-    config_path = os.path.expanduser("~/config.json")
-    if not os.path.isfile(config_path):
-        raise ValueError("Config file not found at: %s" % config_path)
-    with open(config_path, "r") as config_file:
-        config = json.load(config_file)
-
-    # Per-host config dictionaries.
-    host_config = {}
-    """
-    for hostname in hosts:
-        _, _, port, _ = read_openssh_config(hostname)
-        host_config[hostname] = {"port": port}
-    """
-
     # Start the ssh client.
-    init_delay = 2
-    localhost = socket.gethostname()
     sshclient = ParallelSSHClient(hosts, host_config=host_config, pkey=pkey)
 
     # Command string format arguments are in ``host_args``.
-    host_args = [(config["server_ip"], config["port"], hostname) for hostname in hosts]
-    # output = sshclient.run_command("meadclient %s %s %s", host_args=host_args)
+    host_args = [(server_ip, port, hostname) for hostname in hosts]
+    sshclient.run_command("meadclient %s %s %s", host_args=host_args)
 
     # Create and start the head node clients.
     head_processes: Dict[str, mp.Process] = {}
@@ -75,11 +64,6 @@ def init() -> None:
         # The ``out_queue`` sends data going to the remote node.
         out_queue: mp.Queue = mp.Queue()
         cellar.HEAD_QUEUES[hostname] = out_queue
-
-        # Get connection information from ``config``.
-        # TODO: Don't use ``port`` for two different things.
-        server_ip: str = config["server_ip"]
-        port = config["port"]
 
         # We use the hostname as the channel.
         leader = Client(server_ip, port, hostname, in_funnel, out_queue)
