@@ -14,5 +14,5 @@ for node in "${nodes[@]}"
 do
     ssh $node "pip uninstall -y mead-mpi && pip install git+git://github.com/brendanxwhitaker/mead.git && rm ~/client.log" &
 done
-git clone https://github.com/brendanxwhitaker/mead.git ~pkgs/mead/
+git clone https://github.com/brendanxwhitaker/mead.git ~/pkgs/mead/
 pip uninstall -y mead-mpi && pip install -e ~/pkgs/mead/
