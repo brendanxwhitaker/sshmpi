@@ -8,13 +8,19 @@ def augment(funnel: mead.Funnel, spout: mead.Spout) -> None:
     # imports are all defined properly.
     import time
 
+    times = []
     t = time.time()
     while 1:
         print("Loop: %f" % (time.time() - t))
+        times.append(time.time() - t)
         t = time.time()
         liquid = spout.recv()
         liquid += 1
         funnel.send(liquid)
+        if liquid == 10000:
+            break
+    mean = sum(times) / len(times)
+    funnel.send(mean)
 
 
 def main() -> None:
@@ -43,6 +49,8 @@ def main() -> None:
     while i < 10000:
         in_funnel.send(i)
         i = out_spout.recv()
+    mean = out_spout.recv()
+    print("Mean: %fs" % mean)
 
 
 if __name__ == "__main__":
