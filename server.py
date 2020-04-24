@@ -57,7 +57,13 @@ def main() -> None:
         # At this pout, ``data`` could be a channel, NAT-type pair, or an ok.
         data_bytes, addr = sockfd.recvfrom(1024)
         data = data_bytes.decode("ascii")
-        print("DEBUG: data:", data)
+        if data == "RESET":
+            connection_stages = {}
+            channel_map = {}
+            reset = "RESET_COMPLETED"
+            breset = reset.encode("ascii")
+            sockfd.sendto(breset, addr)
+            continue
 
         # Retrieve the connection stage of this address.
         stage, channel = connection_stages.get(addr, ("initial", ""))
