@@ -18,6 +18,7 @@ from mead.classes import (
     _Process,
     _Funnel,
     _Spout,
+    _Join,
     inject,
     extract,
 )
@@ -34,6 +35,23 @@ RestrictPortNAT = "Restrict Port NAT"  # 2
 SymmetricNAT = "Symmetric NAT"  # 3
 UnknownNAT = "Unknown NAT"  # 4
 NATTYPE = (FullCone, RestrictNAT, RestrictPortNAT, SymmetricNAT, UnknownNAT)
+
+
+def reset(server_ip: str, port: int) -> int:
+    """ Resets the channel map of the server. """
+    sockfd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    # Send channel and NAT type to server, requesting a connection.
+    master = (server_ip, port)
+    breset = "RESET".encode("ascii")
+    sockfd.sendto(breset, master)
+
+    # Wait for ``ok``, acknowledgement of request.
+    bdata, _ = sockfd.recvfrom(1024)
+    data = bdata.decode()
+    if data == "RESET_COMPLETE":
+        return 0
+    return 1
 
 
 class Client:
@@ -130,7 +148,7 @@ class Client:
             # Serialize in bytes as a length-message pair.
             pair: bytes = get_length_message_pair(obj)
 
-            logging.info("%s: sending pair: %s", self.channel, str(pair))
+            logging.info("%s: sending pair: %s", self.channel, str(obj))
 
             # Send to target client.
             sock.sendto(pair[:16], self.target)
@@ -170,7 +188,7 @@ class Client:
         self.chat_fullcone(self.send_msg, self.recv_msg, self.sockfd)
 
         # Let the threads run.
-        while True:
+        while 1:
             try:
                 time.sleep(0.5)
             except KeyboardInterrupt:
@@ -198,6 +216,9 @@ def remote(server_ip: str, port: int, channel: str) -> None:
 
     # The ``out_queue`` sends data going to the head node.
     out_queue: mp.Queue = mp.Queue()
+
+    # For fo
+    aux_funnel, aux_spout = mp.Pipe()
 
     # Create and start the client.
     c = Client(server_ip, port, channel, in_funnel, out_queue)
@@ -271,7 +292,9 @@ def remote(server_ip: str, port: int, channel: str) -> None:
             p_user.start()
 
             # Create and start the injection process.
-            p_inject = mp.Process(target=inject, args=(in_spout, injection_funnels))
+            p_inject = mp.Process(
+                target=inject, args=(in_spout, injection_funnels, aux_funnel)
+            )
             p_inject.start()
 
             # Create and start the extraction processes.
@@ -285,3 +308,11 @@ def remote(server_ip: str, port: int, channel: str) -> None:
 
             logging.info("REMOTE: break.")
             break
+
+    while 1:
+        obj = aux_spout.recv()
+        if isinstance(obj, _Join):
+            logging.info("REMOTE: joining.")
+            logging.info("REMOTE: sending reply.")
+            out_queue.put(obj)
+            p_user.join()

@@ -17,7 +17,7 @@ def augment(funnel: mead.Funnel, spout: mead.Spout) -> None:
         liquid = spout.recv()
         liquid += 1
         funnel.send(liquid)
-        if liquid == 10000:
+        if liquid == 100:
             break
     mean = sum(times) / len(times)
     funnel.send(mean)
@@ -42,15 +42,17 @@ def main() -> None:
 
     # A ``mead.Process`` runs on exactly one (remote) node.
 
-    p = mead.Process(target=augment, args=(out_funnel, in_spout))
+    p = mead.Process(target=augment, hostname="cc-2", args=(out_funnel, in_spout))
     p.start()
 
     i = 0
-    while i < 10000:
+    while i < 100:
         in_funnel.send(i)
         i = out_spout.recv()
     mean = out_spout.recv()
     print("Mean: %fs" % mean)
+    p.join()
+    mead.kill()
 
 
 if __name__ == "__main__":

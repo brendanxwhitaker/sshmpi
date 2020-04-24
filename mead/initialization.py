@@ -9,7 +9,7 @@ from pssh.utils import read_openssh_config
 from pssh.clients import ParallelSSHClient
 
 from mead import cellar
-from mead.client import Client
+from mead.client import Client, reset
 from mead.openssh import get_available_hostnames_from_sshconfig
 
 
@@ -43,9 +43,15 @@ def init(config_path: str = "~/config.json") -> None:
     # Start the ssh client.
     sshclient = ParallelSSHClient(hosts, host_config=host_config, pkey=pkey)
 
+    reset(server_ip, port)
+
     # Command string format arguments are in ``host_args``.
-    host_args = [(server_ip, port, hostname) for hostname in hosts]
-    output = sshclient.run_command("meadclient %s %s %s", host_args=host_args)
+    host_args = [(server_ip, port, name) for name in hosts]
+    output = sshclient.run_command(
+        "meadclient %s %s %s > mead_global.log 2>&1",
+        host_args=host_args,
+        shell="bash -ic",
+    )
 
     # Create and start the head node clients.
     head_processes: Dict[str, mp.Process] = {}
@@ -69,3 +75,16 @@ def init(config_path: str = "~/config.json") -> None:
         p_client.start()
 
         head_processes[hostname] = p_client
+    cellar.HEAD_PROCESSES = head_processes
+    cellar.SSHCLIENT = sshclient
+
+
+def kill() -> None:
+    """ Kills head processes amd remote meadclient processes. """
+    for p in cellar.HEAD_PROCESSES.values():
+        p.terminate()
+        p.join()
+    output = cellar.SSHCLIENT.run_command("pkill -e meadclient")
+    for _, out in output.items():
+        for line in out.stdout:
+            print(line)

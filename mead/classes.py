@@ -1,4 +1,6 @@
 """ Classes for node-to-node communication over UDP. """
+import sys
+import signal
 import logging
 from typing import Tuple, Dict, Optional, Any, Callable, List, Union
 
@@ -35,6 +37,21 @@ class _Process:
         self.kwargs: Dict[str, Any] = kwargs
 
 
+class _Join:
+    def __init__(self, hostname: str):
+        self.hostname = hostname
+
+
+class _Terminate:
+    def __init__(self, hostname: str):
+        self.hostname = hostname
+
+
+class _Kill:
+    def __init__(self, hostname: str):
+        self.hostname = hostname
+
+
 class Process:
     """ An analogue of ``mp.Process`` for mead serialization. """
 
@@ -61,9 +78,22 @@ class Process:
         else:
             self.kwargs = {}
 
+        self.aux_spout: Connection
+        self.p_inject: mp.Process
+        self.extraction_processes: Dict[str, mp.Process]
+
     def join(self, timeout: Optional[Union[float, int]] = None) -> None:
         """ Blocks until the process terminates. """
-        raise NotImplementedError
+        join = _Join(self.hostname)
+        cellar.HEAD_QUEUES[self.hostname].put(join)
+        reply = self.aux_spout.recv()
+        if isinstance(reply, _Join):
+            logging.info("Remote process joined.")
+            self.p_inject.terminate()
+            self.p_inject.join()
+            for _, p in self.extraction_processes.items():
+                p.terminate()
+                p.join()
 
     def terminate(self) -> None:
         """ Terminates the process with SIGTERM. """
@@ -127,10 +157,14 @@ class Process:
                 _spout = cellar.INTERNAL_SPOUTS[arg.pipe_id]
                 extraction_spouts[arg.pipe_id] = _spout
 
+        aux_funnel, aux_spout = mp.Pipe()
+        self.aux_spout = aux_spout
+
         # Create and start the injection process.
-        inject_args = (cellar.HEAD_SPOUTS[hostname], injection_funnels)
+        inject_args = (cellar.HEAD_SPOUTS[hostname], injection_funnels, aux_funnel)
         p_inject = mp.Process(target=inject, args=inject_args)
         p_inject.start()
+        self.p_inject = p_inject
 
         # Create and start the extraction processes.
         extraction_processes: Dict[str, mp.Process] = {}
@@ -141,27 +175,46 @@ class Process:
             p_extract = mp.Process(target=extract, args=extract_args)
             p_extract.start()
             extraction_processes[pipe_id] = p_extract
+        self.extraction_processes = extraction_processes
 
 
-def inject(in_spout: Connection, injection_funnels: Dict[str, Connection]) -> None:
+def inject(
+    in_spout: Connection,
+    injection_funnels: Dict[str, Connection],
+    aux_funnel: Optional[Connection] = None,
+) -> None:
     """ Receives data from the client and forwards it to a local process. """
+
+    # Exit when SIGTERM is sent, i.e. when we call .terminate().
+    signal.signal(signal.SIGTERM, lambda signum, frame: sys.exit())
+
     while 1:
         logging.info("INJECTION: waiting.")
         bparcel = in_spout.recv()
         parcel = dill.loads(bparcel)
+
+        # Handle process signals.
+        if aux_funnel and isinstance(parcel, (_Join, _Terminate, _Kill)):
+            logging.info("INJECTION: got signal.")
+            aux_funnel.send(parcel)
+            continue
+
+        # If the received object is not a signal, it ought to be a parcel.
         if not isinstance(parcel, Parcel):
             logging.info("INJECTION: Error: obj not a Parcel: %s", str(parcel))
 
         assert isinstance(parcel, Parcel)
         assert not isinstance(parcel.obj, Parcel)
-        logging.info(
-            "INJECTION: parcel: %s to pipe id: %s", str(parcel), parcel.pipe_id
-        )
+        logging.info("INJECTION: parcel: %s for pipe: %s", str(parcel), parcel.pipe_id)
         injection_funnels[parcel.pipe_id].send(parcel.obj)
 
 
 def extract(pipe_id: str, out_queue: mp.Queue, extraction_spout: Connection) -> None:
     """ Receives data from a local process and forwards it to the client. """
+
+    # Exit when SIGTERM is sent, i.e. when we call .terminate().
+    signal.signal(signal.SIGTERM, lambda signum, frame: sys.exit())
+
     while 1:
         obj = extraction_spout.recv()
         logging.info("EXTRACTION: obj: %s", str(obj))
