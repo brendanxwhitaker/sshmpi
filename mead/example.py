@@ -40,7 +40,7 @@ def main() -> None:
     p.start()
 
     i = 0
-    while i < 100000:
+    while i < 10000:
         in_funnel.send(i)
         i = out_spout.recv()
 

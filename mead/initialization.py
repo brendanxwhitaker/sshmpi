@@ -1,5 +1,6 @@
 """ Functions for initializing client connections. """
 import os
+import sys
 import json
 import socket
 from typing import Dict
@@ -47,7 +48,7 @@ def init(config_path: str = "~/config.json") -> None:
 
     # Command string format arguments are in ``host_args``.
     host_args = [(server_ip, port, hostname) for hostname in hosts]
-    sshclient.run_command("meadclient %s %s %s", host_args=host_args)
+    # output = sshclient.run_command("meadclient %s %s %s", host_args=host_args)
 
     # Create and start the head node clients.
     head_processes: Dict[str, mp.Process] = {}

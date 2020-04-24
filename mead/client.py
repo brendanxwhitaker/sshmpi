@@ -25,7 +25,6 @@ from mead.translation import get_length_message_pair
 
 logging.basicConfig(filename="mead.log", level=logging.DEBUG)
 logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
-logging.disable(level=logging.CRITICAL)  # type: ignore[call-arg]
 
 # pylint: disable=invalid-name
 
