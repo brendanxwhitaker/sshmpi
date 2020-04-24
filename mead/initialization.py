@@ -1,8 +1,6 @@
 """ Functions for initializing client connections. """
 import os
-import sys
 import json
-import socket
 from typing import Dict
 
 import multiprocessing as mp
@@ -13,7 +11,6 @@ from pssh.clients import ParallelSSHClient
 from mead import cellar
 from mead.client import Client
 from mead.openssh import get_available_hostnames_from_sshconfig
-
 
 
 def init(config_path: str = "~/config.json") -> None:
@@ -48,7 +45,7 @@ def init(config_path: str = "~/config.json") -> None:
 
     # Command string format arguments are in ``host_args``.
     host_args = [(server_ip, port, hostname) for hostname in hosts]
-    # output = sshclient.run_command("meadclient %s %s %s", host_args=host_args)
+    output = sshclient.run_command("meadclient %s %s %s", host_args=host_args)
 
     # Create and start the head node clients.
     head_processes: Dict[str, mp.Process] = {}
