@@ -4,6 +4,10 @@ import multiprocessing as mp
 from multiprocessing.connection import Connection
 from pssh.clients import ParallelSSHClient
 
+# TODO: Consider overriding getattr on ``cellar`` to tell the user they
+# need to run ``mead.init()`` first if they try to start a
+# ``mead.Process``.
+
 PIPE_COUNTER = 0
 HOSTNAMES: List[str] = []
 SSHCLIENT: ParallelSSHClient

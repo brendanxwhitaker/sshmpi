@@ -1,6 +1,7 @@
 """ Functions for initializing client connections. """
 import os
 import json
+import socket
 from typing import Dict
 
 import multiprocessing as mp
@@ -9,8 +10,8 @@ from pssh.utils import read_openssh_config
 from pssh.clients import ParallelSSHClient
 
 from mead import cellar
-from mead.client import Client, reset
-from mead.openssh import get_available_hostnames_from_sshconfig
+from mead.utils import get_available_hostnames_from_sshconfig
+from mead.client import Client
 
 
 def init(config_path: str = "~/config.json") -> None:
@@ -47,7 +48,7 @@ def init(config_path: str = "~/config.json") -> None:
 
     # Command string format arguments are in ``host_args``.
     host_args = [(server_ip, port, name) for name in hosts]
-    output = sshclient.run_command(
+    sshclient.run_command(
         "meadclient %s %s %s > mead_global.log 2>&1",
         host_args=host_args,
         shell="bash -ic",
@@ -61,10 +62,6 @@ def init(config_path: str = "~/config.json") -> None:
         in_funnel, in_spout = mp.Pipe()
         cellar.HEAD_SPOUTS[hostname] = in_spout
 
-        # TODO: Consider overriding getattr on ``cellar`` to tell the user they
-        # need to run ``mead.init()`` first if they try to start a
-        # ``mead.Process``.
-
         # The ``out_queue`` sends data going to the remote node.
         out_queue: mp.Queue = mp.Queue()
         cellar.HEAD_QUEUES[hostname] = out_queue
@@ -75,6 +72,8 @@ def init(config_path: str = "~/config.json") -> None:
         p_client.start()
 
         head_processes[hostname] = p_client
+
+    # Store references to the head processes and SSH client.
     cellar.HEAD_PROCESSES = head_processes
     cellar.SSHCLIENT = sshclient
 
@@ -88,3 +87,20 @@ def kill() -> None:
     for _, out in output.items():
         for line in out.stdout:
             print(line)
+
+
+def reset(server_ip: str, port: int) -> int:
+    """ Resets the channel map of the server. """
+    sockfd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    # Send channel and NAT type to server, requesting a connection.
+    master = (server_ip, port)
+    breset = "RESET".encode("ascii")
+    sockfd.sendto(breset, master)
+
+    # Wait for ``ok``, acknowledgement of request.
+    bdata, _ = sockfd.recvfrom(1024)
+    data = bdata.decode()
+    if data == "RESET_COMPLETE":
+        return 0
+    return 1

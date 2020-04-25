@@ -4,28 +4,14 @@
 import sys
 import time
 import socket
-import struct
 import logging
-from typing import Tuple, Callable, Dict, List, Any
+from typing import Tuple, Callable
 from threading import Thread
 
 import multiprocessing as mp
 from multiprocessing.connection import Connection
 
-import dill
-
-from mead.classes import (
-    _Process,
-    _Funnel,
-    _Spout,
-    _Join,
-    inject,
-    extract,
-)
-from mead.translation import get_length_message_pair
-
-logging.basicConfig(filename="mead.log", level=logging.DEBUG)
-logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+from mead.utils import bytes2addr, get_length_message_pair
 
 # pylint: disable=invalid-name
 
@@ -35,23 +21,6 @@ RestrictPortNAT = "Restrict Port NAT"  # 2
 SymmetricNAT = "Symmetric NAT"  # 3
 UnknownNAT = "Unknown NAT"  # 4
 NATTYPE = (FullCone, RestrictNAT, RestrictPortNAT, SymmetricNAT, UnknownNAT)
-
-
-def reset(server_ip: str, port: int) -> int:
-    """ Resets the channel map of the server. """
-    sockfd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-    # Send channel and NAT type to server, requesting a connection.
-    master = (server_ip, port)
-    breset = "RESET".encode("ascii")
-    sockfd.sendto(breset, master)
-
-    # Wait for ``ok``, acknowledgement of request.
-    bdata, _ = sockfd.recvfrom(1024)
-    data = bdata.decode()
-    if data == "RESET_COMPLETE":
-        return 0
-    return 1
 
 
 class Client:
@@ -194,125 +163,3 @@ class Client:
             except KeyboardInterrupt:
                 print("exit")
                 sys.exit()
-
-
-def bytes2addr(bytes_address: bytes) -> Tuple[Tuple[str, int], int]:
-    """Convert a hash to an address pair."""
-    if len(bytes_address) != 8:
-        raise ValueError("invalid bytes_address")
-    host = socket.inet_ntoa(bytes_address[:4])
-
-    # Unpack returns a tuple even if it contains exactly one item.
-    port = struct.unpack("H", bytes_address[-4:-2])[0]
-    nat_type_id = struct.unpack("H", bytes_address[-2:])[0]
-    target = (host, port)
-    return target, nat_type_id
-
-
-def remote(server_ip: str, port: int, channel: str) -> None:
-    """ Runs the client for a remote worker. """
-    # The ``in_spout`` receives data coming from the head node.
-    in_funnel, in_spout = mp.Pipe()
-
-    # The ``out_queue`` sends data going to the head node.
-    out_queue: mp.Queue = mp.Queue()
-
-    # For fo
-    aux_funnel, aux_spout = mp.Pipe()
-
-    # Create and start the client.
-    c = Client(server_ip, port, channel, in_funnel, out_queue)
-    p_client = mp.Process(target=c.main)
-    p_client.start()
-
-    # We'll first write this file so it only handles one Process, and then add
-    # an abstraction for multiple later on.
-
-    # Wait until we get an instruction to start a mead.Process.
-    while 1:
-        logging.info("REMOTE: waiting on inspout.")
-
-        # Assume obj is already unpickled.
-        bprocess = in_spout.recv()
-        obj = dill.loads(bprocess)
-
-        logging.info("REMOTE: received obj: %s", obj)
-        if not isinstance(obj, _Process):
-            logging.info("ERR: obj not _Process: %s", obj)
-
-        # If we're sent a mead process to run.
-        if isinstance(obj, _Process):
-            p = obj
-
-            # Create pipes to communicate with injection/extraction processes.
-            injection_funnels: Dict[str, Connection] = {}
-            extraction_spouts: Dict[str, Connection] = {}
-
-            # Iterate over the arguments, replacing mead pipes with mp pipes.
-            mp_args: List[Any] = []
-            for arg in p.args:
-                if isinstance(arg, _Funnel):
-                    funnel, spout = mp.Pipe()
-                    extraction_spouts[arg.pipe_id] = spout
-                    mp_args.append(funnel)
-                    del funnel
-                    del spout
-                elif isinstance(arg, _Spout):
-                    funnel, spout = mp.Pipe()
-                    logging.info(
-                        "REMOTE: adding injection funnel with pipe id: %s", arg.pipe_id
-                    )
-                    logging.info("REMOTE: adding spout to mp args: %s", str(spout))
-                    injection_funnels[arg.pipe_id] = funnel
-                    mp_args.append(spout)
-                    del funnel
-                    del spout
-                else:
-                    mp_args.append(arg)
-
-            # Iterate over the keyword arguments, replacing mead pipes with mp pipes.
-            mp_kwargs: Dict[str, Any] = {}
-            for name, arg in p.kwargs.items():
-                if isinstance(arg, _Funnel):
-                    funnel, spout = mp.Pipe()
-                    extraction_spouts[arg.pipe_id] = spout
-                    mp_kwargs[name] = funnel
-                elif isinstance(arg, _Spout):
-                    funnel, spout = mp.Pipe()
-                    injection_funnels[arg.pipe_id] = funnel
-                    mp_kwargs[name] = spout
-                else:
-                    mp_kwargs[name] = arg
-
-            logging.info("REMOTE: starting user processes.")
-            logging.info("REMOTE: injection funnels: %s:", str(injection_funnels))
-            logging.info("REMOTE: mpargs: %s:", str(mp_args))
-
-            p_user = mp.Process(target=p.target, args=tuple(mp_args), kwargs=mp_kwargs)
-            p_user.start()
-
-            # Create and start the injection process.
-            p_inject = mp.Process(
-                target=inject, args=(in_spout, injection_funnels, aux_funnel)
-            )
-            p_inject.start()
-
-            # Create and start the extraction processes.
-            extraction_processes: Dict[str, mp.Process] = {}
-            for pipe_id, extraction_spout in extraction_spouts.items():
-                p_extract = mp.Process(
-                    target=extract, args=(pipe_id, out_queue, extraction_spout)
-                )
-                p_extract.start()
-                extraction_processes[pipe_id] = p_extract
-
-            logging.info("REMOTE: break.")
-            break
-
-    while 1:
-        obj = aux_spout.recv()
-        if isinstance(obj, _Join):
-            logging.info("REMOTE: joining.")
-            logging.info("REMOTE: sending reply.")
-            out_queue.put(obj)
-            p_user.join()
