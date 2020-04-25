@@ -1,10 +1,26 @@
 """ Function to parse hostnames from OpenSSH config file. """
 import os
 import socket
-from typing import List
+import struct
+from typing import List, Tuple
+
+import dill
 from paramiko import SSHConfig
 
 # pylint: disable=too-few-public-methods
+
+
+def bytes2addr(bytes_address: bytes) -> Tuple[Tuple[str, int], int]:
+    """Convert a hash to an address pair."""
+    if len(bytes_address) != 8:
+        raise ValueError("invalid bytes_address")
+    host = socket.inet_ntoa(bytes_address[:4])
+
+    # Unpack returns a tuple even if it contains exactly one item.
+    port = struct.unpack("H", bytes_address[-4:-2])[0]
+    nat_type_id = struct.unpack("H", bytes_address[-2:])[0]
+    target = (host, port)
+    return target, nat_type_id
 
 
 def get_available_hostnames_from_sshconfig(config_file: str = "") -> List[str]:
@@ -48,3 +64,21 @@ def get_available_hostnames_from_sshconfig(config_file: str = "") -> List[str]:
     hostnames = sorted(hostnames)
 
     return hostnames
+
+
+def get_length_message_pair(obj: object) -> bytes:
+    """ Pickles an object and returns bytes of a length+message pair. """
+    message: bytes = dill.dumps(obj)
+
+    # Get representation of then length of ``message`` in bytes.
+    length = str(len(message)).encode("ascii")
+    assert len(length) <= 16
+
+    # Compute the pad so that prefix is a 16-byte sequence.
+    padsize = 16 - len(length)
+    pad = ("0" * padsize).encode("ascii")
+
+    # Concatenate prefix and message.
+    parcel = pad + length + message
+
+    return parcel

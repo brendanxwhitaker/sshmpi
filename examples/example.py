@@ -1,6 +1,11 @@
 """ An example of how to pass messages between nodes with ``mead``. """
+import sys
+import logging
+
 import mead
 
+logging.basicConfig(filename="mead.log", level=logging.DEBUG)
+# logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
 def augment(funnel: mead.Funnel, spout: mead.Spout) -> None:
     """ Augments an integer. """
@@ -41,17 +46,19 @@ def main() -> None:
     # ends of the pipe to a ``mead.Process``, it will raise an error.
 
     # A ``mead.Process`` runs on exactly one (remote) node.
+    hosts = ["cc-1", "cc-2", "cc-3", "cc-4"]
 
-    p = mead.Process(target=augment, hostname="cc-2", args=(out_funnel, in_spout))
-    p.start()
+    for hostname in hosts:
+        p = mead.Process(target=augment, hostname=hostname, args=(out_funnel, in_spout))
+        p.start()
 
-    i = 0
-    while i < 100:
-        in_funnel.send(i)
-        i = out_spout.recv()
-    mean = out_spout.recv()
-    print("Mean: %fs" % mean)
-    p.join()
+        i = 0
+        while i < 100:
+            in_funnel.send(i)
+            i = out_spout.recv()
+        mean = out_spout.recv()
+        print("Mean: %fs" % mean)
+        p.join()
     mead.kill()
 
 
