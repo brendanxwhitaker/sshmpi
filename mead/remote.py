@@ -1,4 +1,5 @@
 """ Starts processes for a remote client. Called by ``meadclient``. """
+import sys
 import logging
 from typing import Dict
 
@@ -15,6 +16,8 @@ from mead.connections import get_remote_connections
 
 def remote(server_ip: str, port: int, channel: str) -> None:
     """ Runs the client for a remote worker. """
+    logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+
     # Transport in and out of the head node.
     in_funnel, in_spout = mp.Pipe()
     out_queue: mp.Queue = mp.Queue()
