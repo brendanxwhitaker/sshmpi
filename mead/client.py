@@ -144,7 +144,7 @@ class Client:
         self.request_for_connection(nat_type_id="0")
 
         # Initialize the connection.
-        while 1:
+        for _ in range(3):
             self.sockfd.sendto("refresh".encode(), self.target)
             time.sleep(1)
         data = self.sockfd.recvfrom(1024)[0].decode()
