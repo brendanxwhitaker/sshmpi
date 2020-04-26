@@ -150,7 +150,10 @@ class Client:
         # Wait for a refresh token from the other client.
         bdata, _addr = self.sockfd.recvfrom(1024)
         data = bdata.decode("ascii")
-        assert data == "refresh"
+        if data != "refresh":
+            logging.info("Data: %s", str(data))
+            print("Data:", data)
+            raise ValueError
 
         # Chat with peer.
         print("FullCone chat mode")
