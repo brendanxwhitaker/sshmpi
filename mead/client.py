@@ -90,6 +90,7 @@ class Client:
                 # Handle timeout refresh tokens.
                 if data == "refresh":
                     logging.info("DEBUG: received refresh token.")
+                    self.sockfd.sendto("refresh".encode(), self.target)
                     self.sockfd.sendto("confirm".encode(), self.target)
                     self.refresh()
                     continue
@@ -143,9 +144,6 @@ class Client:
         """ Refresh the connection. """
         # Wait until the peer confirms it has received refresh token.
         while 1:
-            # Send a refresh token to initialize the connection.
-            self.sockfd.sendto("refresh".encode(), self.target)
-
             # Wait for a refresh token from the other client.
             bdata, _addr = self.sockfd.recvfrom(1024)
             try:
@@ -158,12 +156,16 @@ class Client:
             elif data == "confirm":
                 break
 
+            # Send a refresh token to initialize the connection.
+            self.sockfd.sendto("refresh".encode(), self.target)
+
     def main(self) -> None:
         """ Start a chat session. """
         # Connect to the server and request a channel.
         self.request_for_connection(nat_type_id="0")
 
         # Initialize the connection.
+        self.sockfd.sendto("refresh".encode(), self.target)
         self.refresh()
 
         # Chat with peer.
