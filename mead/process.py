@@ -76,6 +76,8 @@ class Process:
 
         # Send an instruction to start ``self: mead.Process`` on remote.
         cellar.HEAD_QUEUES[self.hostname].put(_process)
+        cellar.HEAD_QUEUES[self.hostname].put(_process)
+        cellar.HEAD_QUEUES[self.hostname].put(_process)
 
         aux_funnel, aux_spout = mp.Pipe()
         self.aux_spout = aux_spout
