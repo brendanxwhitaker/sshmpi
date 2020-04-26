@@ -37,6 +37,7 @@ class Client:
         self.master = (server_ip, port)
         self.channel = channel
         self.sockfd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.last_refresh = time.time()
 
         # If testing with server and both clients on localhost, use ``127.0.0.1``.
         self.target: Tuple[str, int] = ("", 0)
@@ -90,9 +91,9 @@ class Client:
                 # Handle timeout refresh tokens.
                 if data == "refresh":
                     logging.info("DEBUG: received refresh token.")
-                    self.sockfd.sendto("refresh".encode(), self.target)
-                    self.sockfd.sendto("confirm".encode(), self.target)
-                    self.refresh()
+                    if time.time() - self.last_refresh > 5.0:
+                        self.sockfd.sendto("confirm".encode(), self.target)
+                        self.refresh()
                     continue
 
                 # Parse the message length bytes.
@@ -158,6 +159,7 @@ class Client:
 
             # Send a refresh token to initialize the connection.
             self.sockfd.sendto("refresh".encode(), self.target)
+        self.last_refresh = time.time()
 
     def main(self) -> None:
         """ Start a chat session. """
@@ -165,7 +167,7 @@ class Client:
         self.request_for_connection(nat_type_id="0")
 
         # Initialize the connection.
-        self.sockfd.sendto("refresh".encode(), self.target)
+        self.sockfd.sendto("confirm".encode(), self.target)
         self.refresh()
 
         # Chat with peer.
