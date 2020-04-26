@@ -142,18 +142,18 @@ class Client:
         # Connect to the server and request a channel.
         self.request_for_connection(nat_type_id="0")
 
-        # Send a refresh token to initialize the connection.
-        data = "refresh"
-        bdata = data.encode("ascii")
-        self.sockfd.sendto(bdata, self.target)
+        # Wait until the peer confirms it has received refresh token.
+        while 1:
+            # Send a refresh token to initialize the connection.
+            self.sockfd.sendto("refresh".encode(), self.target)
 
-        # Wait for a refresh token from the other client.
-        bdata, _addr = self.sockfd.recvfrom(1024)
-        data = bdata.decode("ascii")
-        if data != "refresh":
-            logging.info("Data: %s", str(data))
-            print("Data:", data)
-            raise ValueError
+            # Wait for a refresh token from the other client.
+            bdata, _addr = self.sockfd.recvfrom(1024)
+            data = bdata.decode("ascii")
+            if data == "refresh":
+                self.sockfd.sendto("confirm".encode(), self.target)
+            elif data == "confirm":
+                break
 
         # Chat with peer.
         print("FullCone chat mode")
