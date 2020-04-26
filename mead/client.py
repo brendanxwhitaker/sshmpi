@@ -90,6 +90,7 @@ class Client:
                 # Handle timeout refresh tokens.
                 if data == "refresh":
                     logging.info("DEBUG: received refresh token.")
+                    self.sockfd.sendto("confirm".encode(), self.target)
                     self.refresh()
                     continue
 
