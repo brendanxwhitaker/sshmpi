@@ -8,11 +8,11 @@ do
 done
 for node in "${nodes[@]}"
 do
-    ssh $node "update_hostsfile && pkill -e meadclient && rm mead.log" &
+    ssh $node "update_hostsfile && pkill -e meadclient && rm *.log" &
 done
 for node in "${nodes[@]}"
 do
-    ssh $node "pip uninstall -y mead-mpi && pip install git+git://github.com/brendanxwhitaker/mead.git && rm ~/client.log" &
+    ssh $node "pip uninstall -y mead-mpi && pip install git+git://github.com/brendanxwhitaker/mead.git" &
 done
 git clone https://github.com/brendanxwhitaker/mead.git ~/pkgs/mead/
 pip uninstall -y mead-mpi && pip install -e ~/pkgs/mead/
