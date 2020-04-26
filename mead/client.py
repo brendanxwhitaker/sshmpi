@@ -22,7 +22,6 @@ SymmetricNAT = "Symmetric NAT"  # 3
 UnknownNAT = "Unknown NAT"  # 4
 NATTYPE = (FullCone, RestrictNAT, RestrictPortNAT, SymmetricNAT, UnknownNAT)
 
-
 class Client:
     """ The UDP client for interacting with the server and other Clients. """
 
@@ -37,7 +36,6 @@ class Client:
         self.master = (server_ip, port)
         self.channel = channel
         self.sockfd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.last_refresh = time.time()
 
         # If testing with server and both clients on localhost, use ``127.0.0.1``.
         self.target: Tuple[str, int] = ("", 0)
@@ -90,10 +88,8 @@ class Client:
 
                 # Handle timeout refresh tokens.
                 if data == "refresh":
-                    logging.info("DEBUG: received refresh token.")
-                    if time.time() - self.last_refresh > 5.0:
-                        self.sockfd.sendto("confirm".encode(), self.target)
-                        self.refresh()
+                    sock.sendto("confirm".encode(), self.target)
+                if data == "confirm":
                     continue
 
                 # Parse the message length bytes.
@@ -141,25 +137,6 @@ class Client:
         tr.setDaemon(True)
         tr.start()
 
-    def refresh(self) -> None:
-        """ Refresh the connection. """
-        # Wait until the peer confirms it has received refresh token.
-        while 1:
-            # Wait for a refresh token from the other client.
-            bdata, _addr = self.sockfd.recvfrom(1024)
-            try:
-                data = bdata.decode("ascii")
-            except UnicodeDecodeError as err:
-                print("Caught during refresh:", err)
-                continue
-            if data == "refresh":
-                self.sockfd.sendto("confirm".encode(), self.target)
-            elif data == "confirm":
-                break
-
-            # Send a refresh token to initialize the connection.
-            self.sockfd.sendto("refresh".encode(), self.target)
-        self.last_refresh = time.time()
 
     def main(self) -> None:
         """ Start a chat session. """
@@ -167,8 +144,12 @@ class Client:
         self.request_for_connection(nat_type_id="0")
 
         # Initialize the connection.
-        self.sockfd.sendto("confirm".encode(), self.target)
-        self.refresh()
+        while 1:
+            self.sockfd.sendto("refresh".encode(), self.target)
+            time.sleep(1)
+        data = self.sockfd.recvfrom(1024)[0].decode()
+        if data == "refresh":
+            self.sockfd.sendto("confirm".encode(), self.target)
 
         # Chat with peer.
         print("FullCone chat mode")
