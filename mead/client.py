@@ -90,6 +90,7 @@ class Client:
                 # Handle timeout refresh tokens.
                 if data == "refresh":
                     logging.info("DEBUG: received refresh token.")
+                    self.refresh()
                     continue
 
                 # Parse the message length bytes.
@@ -137,11 +138,8 @@ class Client:
         tr.setDaemon(True)
         tr.start()
 
-    def main(self) -> None:
-        """ Start a chat session. """
-        # Connect to the server and request a channel.
-        self.request_for_connection(nat_type_id="0")
-
+    def refresh(self) -> None:
+        """ Refresh the connection. """
         # Wait until the peer confirms it has received refresh token.
         while 1:
             # Send a refresh token to initialize the connection.
@@ -149,11 +147,23 @@ class Client:
 
             # Wait for a refresh token from the other client.
             bdata, _addr = self.sockfd.recvfrom(1024)
-            data = bdata.decode("ascii")
+            try:
+                data = bdata.decode("ascii")
+            except UnicodeDecodeError as err:
+                print("Caught during refresh:", err)
+                continue
             if data == "refresh":
                 self.sockfd.sendto("confirm".encode(), self.target)
             elif data == "confirm":
                 break
+
+    def main(self) -> None:
+        """ Start a chat session. """
+        # Connect to the server and request a channel.
+        self.request_for_connection(nat_type_id="0")
+
+        # Initialize the connection.
+        self.refresh()
 
         # Chat with peer.
         print("FullCone chat mode")
