@@ -1,8 +1,10 @@
 """ An example of how to pass messages between nodes with ``mead``. """
 import sys
+import time
 import logging
 
 import mead
+from mead.utils import get_available_hostnames_from_sshconfig
 
 logging.basicConfig(filename="mead.log", level=logging.DEBUG)
 # logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
@@ -11,28 +13,16 @@ def augment(funnel: mead.Funnel, spout: mead.Spout) -> None:
     """ Augments an integer. """
     # TODO: Dill the whole interpreter session during ``init()`` call so that
     # imports are all defined properly.
-    import time
-
-    times = []
-    t = time.time()
     while 1:
-        print("Loop: %f" % (time.time() - t))
-        times.append(time.time() - t)
-        t = time.time()
         liquid = spout.recv()
         liquid += 1
         funnel.send(liquid)
-        if liquid == 100:
+        if liquid == 10:
             break
-    mean = sum(times) / len(times)
-    funnel.send(mean)
 
 
 def main() -> None:
     """ Runs a simple example of ``mead`` usage. """
-    mead.init("local.json")
-    in_funnel, in_spout = mead.Pipe()
-    out_funnel, out_spout = mead.Pipe()
 
     # When you instantiate a mead pipe, it instantiates a multiprocessing pipe
     # in its ``__init__`` function. It stores both ends of this internal pipe
@@ -46,18 +36,26 @@ def main() -> None:
     # ends of the pipe to a ``mead.Process``, it will raise an error.
 
     # A ``mead.Process`` runs on exactly one (remote) node.
+    mead.init("config.json")
+    in_funnel, in_spout = mead.Pipe()
+    out_funnel, out_spout = mead.Pipe()
     hosts = ["cc-1", "cc-2", "cc-3", "cc-4"]
+    hosts = get_available_hostnames_from_sshconfig()
 
     for hostname in hosts:
         p = mead.Process(target=augment, hostname=hostname, args=(out_funnel, in_spout))
         p.start()
 
         i = 0
-        while i < 100:
+        times = []
+        t = time.time()
+        while i < 10:
+            times.append(time.time() - t)
+            t = time.time()
             in_funnel.send(i)
             i = out_spout.recv()
-        mean = out_spout.recv()
-        print("Mean: %fs" % mean)
+        mean = sum(times) / len(times)
+        print("Mean: %s: %fs" % (hostname, mean))
         p.join()
     mead.kill()
 
