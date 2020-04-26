@@ -36,8 +36,8 @@ def inject(
         # If the received object is not a signal, it ought to be a parcel.
         if not isinstance(parcel, Parcel):
             logging.info("INJECTION: Error: obj not a Parcel: %s", str(parcel))
+            continue
 
-        assert isinstance(parcel, Parcel)
         assert not isinstance(parcel.obj, Parcel)
         logging.info("INJECTION: parcel: %s for pipe: %s", str(parcel), parcel.pipe_id)
         injection_funnels[parcel.pipe_id].send(parcel.obj)
