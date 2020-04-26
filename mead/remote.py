@@ -16,6 +16,7 @@ from mead.connections import get_remote_connections
 
 def remote(server_ip: str, port: int, channel: str) -> None:
     """ Runs the client for a remote worker. """
+    logging.basicConfig(filename="remote.log", level=logging.DEBUG)
     logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
     # Transport in and out of the head node.
