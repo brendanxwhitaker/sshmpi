@@ -35,7 +35,7 @@ class Client:
     ) -> None:
         self.master = (server_ip, port)
         self.channel = channel
-        self.sockfd = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sockfd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
         # If testing with server and both clients on localhost, use ``127.0.0.1``.
         self.target: Tuple[str, int] = ("", 0)
@@ -47,7 +47,7 @@ class Client:
     def request_for_connection(self, nat_type_id: str = "0") -> None:
         """ Send a request to the server for a connection. """
         # Create a socket.
-        self.sockfd = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sockfd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
         # Send channel and NAT type to server, requesting a connection.
         msg = (self.channel + " {0}".format(nat_type_id)).encode("ascii")
