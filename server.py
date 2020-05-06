@@ -42,7 +42,7 @@ def main() -> None:
     """ Starts a UDP server listening for connecting clients. """
     port = int(sys.argv[1])
 
-    sockfd = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sockfd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sockfd.bind(("", port))
     print("listening on *:%d (udp)" % port)
 
