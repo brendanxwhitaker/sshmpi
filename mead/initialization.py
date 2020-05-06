@@ -91,7 +91,7 @@ def kill() -> None:
 
 def reset(server_ip: str, port: int) -> int:
     """ Resets the channel map of the server. """
-    sockfd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sockfd = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # Send channel and NAT type to server, requesting a connection.
     master = (server_ip, port)
