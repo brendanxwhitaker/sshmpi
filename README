@@ -3,3 +3,92 @@
 +----+
 
 A message passing interface via UDP NAT-traversal.
+
+The purpose of this library is to provide an alternative to MPI for the case
+when remote worker nodes happen to be behind a NAT. In my case, I had a large
+cluster of nodes all on the same LAN, but I couldn't establish an MPI
+connection because incoming TCP traffic was filtered out. However, they did
+have WAN access. I attempted using a makeshift TURN server-like apparatus, but
+the IPC latency was something like 200-250ms roundtrip because the packets had
+to travel over WAN. I am no expert in netsec, quite the opposite in fact. I had
+an easier time implementing/adapting a hole punching technique for UDP rather
+than TCP, and I wasn't certain if the specific NAT I was behind would even
+support TCP traversal. For this reason I abandoned attempting to get OpenMPI or
+MPICH2 to work, although in theory, it should be possible if the NAT allows TCP
+punching (likely possible if both endpoints aren't behind symmetric NATs). The
+trouble is that MPI (both implementations) use SSH calls to establish a TCP
+connecetion, and telling it to connect to my STUN server for the backward
+connections instead of some port on the remote node's local IP was beyond me
+for a week's worth of work (deciphering MCA parameters is a pain). Although
+laughable in terms of performance/reliability in comparison to those
+frameworks, this PoC did what it was intended to do, after the hole was
+punched, my UDP packet rountrip latency was in the ~2-4ms range, which was fast
+enough for my specific use case, which is mostly compute-bottlenecked anyway.
+
+
+Disclaimer
+==========
+This library is a WIP unfinished and untested PoC. It could probably be made
+reasonably reliable by implementing ACKs and packet ordering and changing the
+IO from a bunch of multiprocessing processes (gross, I know) to a bunch of
+awaitables.
+
+
+Example
+=======
+
+>>> import mead
+>>>
+>>> # Instantiate a remote connection to one or more nodes.
+>>> mead.init("config.json")
+>>>
+>>> # Create a funnel-spout pair.
+>>> in, out = mead.Pipe()
+>>>
+>>> # Instantiate a process to call ``fun(in, out)`` on host ``node0``.
+>>> p = mead.Process(target=fn, hostname="node0", args=(in, out))
+>>>
+>>> # Start the process, which pickles and sends the function and arguments.
+>>> p.start()
+>>>
+>>> # Send a message through the funnel and block until the node replies.
+>>> in.send("sup")
+>>> assert out.recv() == "sup"
+>>>
+>>> # Join and kill the process.
+>>> p.join()
+>>> p.terminate()
+
+In the above, the syntax mirrors a subset of the python ``multiprocessing``
+API. Namely, calling ``mead.Pipe()`` returns two ``Connection`` objects which
+together form a unidirectional pipe. Similarly, calling ``mead.Process``
+creates an ``mp.Process``-like object for running arbitrary pure functions on
+one of the remote nodes specified in ``config.json`` (more on the
+initialization process later). When the ``start()`` method is called, mead
+sends a signal to the remote host to call the start method on an ``mp.Process``
+which mirrors the ``mead.Process`` created locally.
+
+Once the process has been started, arbitrary python objects can be dropped into
+the ``Funnel`` by calling ``in.send(<obj>)``, at which point they are pickled
+and sent via UDP to the specified host. On the remote host, the object is
+unpickled, and sent through a surrogate multiprocessing pipe, and the output
+can be ``recv()``-ed as normal within the target function. This library is
+supposed to be pretty bare-bones, so if you want to broadcast an array or
+something, you'll have to segment it manually and send the pieces to each node
+in a for-loop or something. You could probably do this with asyncio or threads
+or processes if you had a ton of nodes but the send call is pretty
+lightweight(ish), so it shouldn't be necessary most of the time.
+
+Check out ``examples/example.py`` for a more complete example.
+
+Initialization
+==============
+It is assumed your nodes are behind a NAT. The example ``config.json`` has a
+field for the external IP address and port of your server, which should be port
+forwarded and running ``server.py``. The available hostnames are determined by
+your unix hosts file. The remote nodes must be SSH-able from the head node. To
+achieve this, you'll have to use some sort of reverse-SSH tunnel. The
+``init()`` call opens a parallel SSH client connection to all the remote nodes
+and starts a client which serves as the other peer in the hole-punching
+process, and also runs the ``Process`` objects you send it once the connection
+is established.
