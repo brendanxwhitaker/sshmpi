@@ -43,6 +43,10 @@ def init(config_path: str = "~/config.json") -> None:
     # Start the ssh client.
     sshclient = ParallelSSHClient(hosts, host_config=host_config, pkey=pkey)
 
+    # Reserve local UDP ports for each remote node.
+    # TODO
+
+    # Reset the channel map of the rendezvous server.
     reset(server_ip, port)
 
     # Command string format arguments are in ``host_args``.
@@ -53,7 +57,7 @@ def init(config_path: str = "~/config.json") -> None:
         shell="bash -ic",
     )
 
-    # Create and start the head node clients.
+    # Create and start the head node client (one for each remote node).
     head_processes: Dict[str, mp.Process] = {}
     for hostname in hosts:
 
