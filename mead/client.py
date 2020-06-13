@@ -22,6 +22,7 @@ SymmetricNAT = "Symmetric NAT"  # 3
 UnknownNAT = "Unknown NAT"  # 4
 NATTYPE = (FullCone, RestrictNAT, RestrictPortNAT, SymmetricNAT, UnknownNAT)
 
+
 class Client:
     """ The UDP client for interacting with the server and other Clients. """
 
@@ -37,6 +38,14 @@ class Client:
         self.channel = channel
         self.sockfd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
+        # Counters for packet ordering.
+        self.out_idx = 0
+        self.in_idx = 0
+
+        # Heaps containing ``(idx, msg)``.
+        self.in_heap: List[Tuple[int, bytes]] = []
+        self.out_heap: List[Tuple[int, bytes]] = []
+
         # If testing with server and both clients on localhost, use ``127.0.0.1``.
         self.target: Tuple[str, int] = ("", 0)
         self.peer_nat_type = ""
@@ -50,7 +59,7 @@ class Client:
         self.sockfd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
         # Send channel and NAT type to server, requesting a connection.
-        msg = (self.channel + " {0}".format(nat_type_id)).encode("ascii")
+        msg = (self.channel + " %s" % nat_type_id).encode("ascii")
         self.sockfd.sendto(msg, self.master)
 
         # Wait for ``ok``, acknowledgement of request.
@@ -75,7 +84,7 @@ class Client:
         addr, port = self.target
         print("connected to %s:%s with NAT type: %s" % (addr, port, self.peer_nat_type))
 
-    def recv_msg(self, sock: socket.socket) -> None:
+    def recvloop(self, sock: socket.socket) -> None:
         """ Receive message callback. """
         while True:
             # Receive 16 bytes (size of length prefix).
@@ -109,7 +118,7 @@ class Client:
 
                 self.in_funnel.send(bdata)
 
-    def send_msg(self, sock: socket.socket) -> None:
+    def sendloop(self, sock: socket.socket) -> None:
         """ Send message callback. """
         while True:
             obj = self.out_queue.get()
@@ -122,6 +131,44 @@ class Client:
             # Send to target client.
             sock.sendto(pair[:16], self.target)
             sock.sendto(pair[16:], self.target)
+
+    def send(self, msg: bytes) -> None:
+        """ Atomic send with ACK and in-order delivery. """
+        prefix = self.out_idx.to_bytes(4, byteorder="big", signed=False)
+        self.sockfd.sendto(prefix + msg, self.target)
+
+    def recv(self, n: int) -> bytes:
+        """ Atomic recv with ACK and in-order delivery. """
+        while 1:
+            # See if the requested packet is in the heap.
+            if self.in_heap[0][0] == self.in_idx + 1:
+                in_idx, msg = heappop(self.in_heap)
+                self.in_idx += 1
+                break
+
+            # Read from the socket.
+            raw, addr = self.sockfd.recvfrom(4 + n)
+            if addr != self.target:
+                continue
+
+            # Order the messages.
+            prefix, msg = raw[:4], raw[4:]
+            in_idx = int.from_bytes(prefix, byteorder="big", signed=False)
+
+            # If the packet has the right index, return it.
+            if in_idx == self.in_idx + 1:
+                self.in_idx += 1
+                break
+
+            # If its index is too big, store it for later.
+            elif in_idx > self.in_idx + 1:
+                heappush(in_heap, (in_idx, msg))
+
+            # Otherwise, throw it out.
+            else:
+                print("Received packet %d again." % in_idx)
+
+        return msg
 
     @staticmethod
     def chat_fullcone(
@@ -136,7 +183,6 @@ class Client:
         tr = Thread(target=recv, args=(sock,))
         tr.setDaemon(True)
         tr.start()
-
 
     def main(self) -> None:
         """ Start a chat session. """
@@ -153,7 +199,7 @@ class Client:
 
         # Chat with peer.
         print("FullCone chat mode")
-        self.chat_fullcone(self.send_msg, self.recv_msg, self.sockfd)
+        self.chat_fullcone(self.sendloop, self.recvloop, self.sockfd)
 
         # Let the threads run.
         while 1:
