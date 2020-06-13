@@ -6,7 +6,7 @@ import time
 import socket
 import logging
 import multiprocessing as mp
-from typing import Tuple, Callable, List
+from typing import Tuple, Callable
 from threading import Thread
 from multiprocessing.connection import Connection
 
@@ -23,7 +23,23 @@ NATTYPE = (FullCone, RestrictNAT, RestrictPortNAT, SymmetricNAT, UnknownNAT)
 
 
 class Client:
-    """ The UDP client for interacting with the server and other Clients. """
+    """
+    The UDP client for interacting with the server and other Clients.
+
+    Parameters
+    ----------
+    server_ip : ``str``.
+        The IP address of the rendezvous server.
+    port : ``int``.
+        The UDP port on which the rendezvous server is listening.
+    channel : ``str``.
+        A UUID for communication between two clients on a server. This will
+        typically just be the hostname of the worker node.
+    in_funnel : ``Connection``.
+        Injects received data INTO another running process.
+    outq : ``mp.Queue``.
+        Broadcasts data sent from a running process to some remote node.
+    """
 
     def __init__(
         self,
@@ -31,22 +47,18 @@ class Client:
         port: int,
         channel: str,
         in_funnel: Connection,
-        out_queue: mp.Queue,
+        outq: mp.Queue,
     ) -> None:
         self.master = (server_ip, port)
         self.channel = channel
         self.sockfd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-        # Heaps containing ``(idx, msg)``.
-        self.in_heap: List[Tuple[int, bytes]] = []
-        self.out_heap: List[Tuple[int, bytes]] = []
 
         # If testing with server and both clients on localhost, use ``127.0.0.1``.
         self.target: Tuple[str, int] = ("", 0)
         self.peer_nat_type = ""
 
         self.in_funnel = in_funnel
-        self.out_queue = out_queue
+        self.outq = outq
 
     def request_for_connection(self, nat_type_id: str = "0") -> None:
         """ Send a request to the server for a connection. """
@@ -116,7 +128,7 @@ class Client:
     def sendloop(self, sock: socket.socket) -> None:
         """ Send message callback. """
         while True:
-            obj = self.out_queue.get()
+            obj = self.outq.get()
 
             # Serialize in bytes as a length-message pair.
             pair: bytes = get_length_message_pair(obj)
