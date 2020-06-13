@@ -1,5 +1,5 @@
 {
     "server_ip": "127.0.0.1",
     "port": 8000,
-    "hostnames": ["cc-1", "cc-2", "cc-3", "cc-4", "cc-5"]
+    "hostnames": ["localhost"]
 }
