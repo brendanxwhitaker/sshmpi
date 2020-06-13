@@ -1,12 +1,11 @@
 """ The ``mead.Process`` class, analogous to ``mp.Process``. """
 import logging
-from typing import Tuple, Callable, Dict, Any, Optional, Union
-
 import multiprocessing as mp
+from typing import Any, Dict, Tuple, Union, Callable, Optional
 from multiprocessing.connection import Connection
 
 from mead import cellar
-from mead.classes import _Process, _Join
+from mead.classes import _Join, _Process
 from mead.transport import inject, extract
 from mead.connections import get_head_connections
 

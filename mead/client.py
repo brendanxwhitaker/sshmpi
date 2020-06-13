@@ -5,10 +5,9 @@ import sys
 import time
 import socket
 import logging
-from typing import Tuple, Callable
-from threading import Thread
-
 import multiprocessing as mp
+from typing import Tuple, Callable, List
+from threading import Thread
 from multiprocessing.connection import Connection
 
 from mead.utils import bytes2addr, get_length_message_pair
@@ -37,10 +36,6 @@ class Client:
         self.master = (server_ip, port)
         self.channel = channel
         self.sockfd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-        # Counters for packet ordering.
-        self.out_idx = 0
-        self.in_idx = 0
 
         # Heaps containing ``(idx, msg)``.
         self.in_heap: List[Tuple[int, bytes]] = []
@@ -131,44 +126,6 @@ class Client:
             # Send to target client.
             sock.sendto(pair[:16], self.target)
             sock.sendto(pair[16:], self.target)
-
-    def send(self, msg: bytes) -> None:
-        """ Atomic send with ACK and in-order delivery. """
-        prefix = self.out_idx.to_bytes(4, byteorder="big", signed=False)
-        self.sockfd.sendto(prefix + msg, self.target)
-
-    def recv(self, n: int) -> bytes:
-        """ Atomic recv with ACK and in-order delivery. """
-        while 1:
-            # See if the requested packet is in the heap.
-            if self.in_heap[0][0] == self.in_idx + 1:
-                in_idx, msg = heappop(self.in_heap)
-                self.in_idx += 1
-                break
-
-            # Read from the socket.
-            raw, addr = self.sockfd.recvfrom(4 + n)
-            if addr != self.target:
-                continue
-
-            # Order the messages.
-            prefix, msg = raw[:4], raw[4:]
-            in_idx = int.from_bytes(prefix, byteorder="big", signed=False)
-
-            # If the packet has the right index, return it.
-            if in_idx == self.in_idx + 1:
-                self.in_idx += 1
-                break
-
-            # If its index is too big, store it for later.
-            elif in_idx > self.in_idx + 1:
-                heappush(in_heap, (in_idx, msg))
-
-            # Otherwise, throw it out.
-            else:
-                print("Received packet %d again." % in_idx)
-
-        return msg
 
     @staticmethod
     def chat_fullcone(

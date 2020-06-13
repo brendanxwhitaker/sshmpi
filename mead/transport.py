@@ -2,14 +2,13 @@
 import sys
 import signal
 import logging
-from typing import Dict, Optional
-
 import multiprocessing as mp
+from typing import Dict, Optional
 from multiprocessing.connection import Connection
 
 import dill
 
-from mead.classes import Parcel, _Join, _Terminate, _Kill
+from mead.classes import Parcel, _Join, _Kill, _Terminate
 
 
 def inject(
