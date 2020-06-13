@@ -92,3 +92,8 @@ achieve this, you'll have to use some sort of reverse-SSH tunnel. The
 and starts a client which serves as the other peer in the hole-punching
 process, and also runs the ``Process`` objects you send it once the connection
 is established.
+
+TODO
+====
+Use pystun3 instead of a manually configured rendezvous server for all NATs of
+type Restric, Fullcone.
