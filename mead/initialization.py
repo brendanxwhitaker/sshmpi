@@ -2,9 +2,8 @@
 import os
 import json
 import socket
-from typing import Dict
-
 import multiprocessing as mp
+from typing import Dict
 
 from pssh.utils import read_openssh_config
 from pssh.clients import ParallelSSHClient
