@@ -1,8 +1,7 @@
 """ Classes for node-to-node communication over UDP. """
 import logging
-from typing import Tuple, Dict, Any, Callable, Optional, Union
-
 import multiprocessing as mp
+from typing import Any, Dict, Tuple, Union, Callable, Optional
 from multiprocessing.connection import Connection
 
 from mead import cellar
