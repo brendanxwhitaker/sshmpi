@@ -5,21 +5,17 @@ from mead import remote
 
 def main() -> None:
     """ Run the client as a standlone script. """
-    # Set defaults.
-    server_ip = "127.0.0.1"
-    port = 8000
-    channel = "100"
 
     # Parse command-line arguments.
     if len(sys.argv) != 4:
         print("usage: %s <host> <port> <channel>" % sys.argv[0])
         sys.exit(65)
-    server_ip = sys.argv[1]
+    head_ip = sys.argv[1]
     port = int(sys.argv[2])
     channel = sys.argv[3].strip()
 
     # Start communication with the server.
-    remote(server_ip, port, channel)
+    remote(head_ip, port, channel)
 
 if __name__ == "__main__":
     main()
