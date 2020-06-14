@@ -3,8 +3,9 @@ import os
 import json
 import socket
 import multiprocessing as mp
-from typing import Dict
+from typing import Dict, Mapping
 
+import stun
 from pssh.utils import read_openssh_config
 from pssh.clients import ParallelSSHClient
 
@@ -44,13 +45,23 @@ def init(config_path: str = "~/config.json") -> None:
     sshclient = ParallelSSHClient(hosts, host_config=host_config, pkey=pkey)
 
     # Reserve local UDP ports for each remote node.
-    # TODO
+    # TODO: Address possibility that ports are already in-use by another program.
+    # HARDCODE
+    i = 50000
+    head_ip = ""
+    ports: Mapping[str, int] = {}
+    for name in hosts:
+        _, external_ip, external_port = stun.get_ip_info(source_port=i)
+        head_ip = external_ip
+        ports[name] = external_port
+        i += 1
 
+    # NOTE: We're not using the rendezvous server anymore.
     # Reset the channel map of the rendezvous server.
-    reset(server_ip, port)
+    # reset(server_ip, port)
 
     # Command string format arguments are in ``host_args``.
-    host_args = [(server_ip, port, name) for name in hosts]
+    host_args = [(head_ip, ports[name], name) for name in hosts]
     sshclient.run_command(
         "meadclient %s %s %s > mead_global.log 2>&1",
         host_args=host_args,
