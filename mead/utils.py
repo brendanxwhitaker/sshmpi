@@ -5,7 +5,9 @@ import struct
 from typing import List, Tuple
 
 import dill
+from gevent import joinall
 from paramiko import SSHConfig
+from pssh.clients import ParallelSSHClient
 
 # pylint: disable=too-few-public-methods
 
@@ -82,3 +84,36 @@ def get_length_message_pair(obj: object) -> bytes:
     parcel = pad + length + message
 
     return parcel
+
+
+def scp_recv(
+    client: ParallelSSHClient,
+    remote_file: str,
+    local_file: str,
+    num_retries: int,
+    silent: bool = True,
+) -> int:
+    """ Copies from remote host with retries. """
+    copy_args = [{"local_file": local_file, "remote_file": remote_file}]
+    exit_code = 1
+    error = ""
+    i = 0
+    while i < num_retries:
+        # pylint: disable=broad-except
+        try:
+            print(f"Trying send '{local_file}' -> '{remote_file}': {i}||", end="\r")
+            greenlets = client.scp_recv(remote_file, local_file, copy_args=copy_args)
+            returns = joinall(greenlets, timeout=30, raise_error=True)
+            if not returns:
+                raise ValueError
+            exit_code = 0
+            break
+        except Exception as err:
+            error = str(err)
+            i += 1
+    if error and not silent:
+        print(f"Failed recv '{remote_file}' -> '{local_file}' {i} times with: {error}")
+    else:
+        print("")
+
+    return exit_code
