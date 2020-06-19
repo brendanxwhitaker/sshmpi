@@ -8,3 +8,5 @@ logs/
 build/
 dist/
 *.log
+pybind11
+srt
