@@ -10,3 +10,4 @@ dist/
 *.log
 pybind11
 srt
+*.so
