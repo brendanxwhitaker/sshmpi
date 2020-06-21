@@ -10,9 +10,9 @@ ExternalProject_Add(project_srt
         GIT_REPOSITORY https://github.com/ethouris/srt.git
         GIT_TAG dev-fix-attributes
         UPDATE_COMMAND ""
-        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/srt
-        BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/srt
-        CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/srt/configure
+        SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/srt
+        BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/srt
+        CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/lib/srt/configure
         GIT_SUBMODULES ""
         BUILD_COMMAND make srt_static
         GIT_PROGRESS 1
@@ -21,13 +21,13 @@ ExternalProject_Add(project_srt
         INSTALL_COMMAND ""
         )
 add_library(srt STATIC IMPORTED)
-set_property(TARGET srt PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/srt/libsrt.a)
+set_property(TARGET srt PROPERTY IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/lib/srt/libsrt.a)
 find_package (Threads REQUIRED)
 find_package(OpenSSL REQUIRED)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/srt/)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/srt/)
 
 add_subdirectory(lib/pybind11)
 
-pybind11_add_module(mead_srt src/mead_srt.cc)
-add_dependencies(mead_srt pybind11::module project_srt)
-target_link_libraries(mead_srt PRIVATE pybind11::module srt ${OPENSSL_LIBRARIES} Threads::Threads)
+pybind11_add_module(pysrt src/srt.cc)
+add_dependencies(pysrt pybind11::module project_srt)
+target_link_libraries(pysrt PRIVATE pybind11::module srt ${OPENSSL_LIBRARIES} Threads::Threads)
