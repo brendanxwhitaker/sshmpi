@@ -135,7 +135,7 @@ int mead_cleanup()
     return 0;
 }
 
-PYBIND11_MODULE(crc, m) {
+PYBIND11_MODULE(mead_srt, m) {
     // optional module docstring
     m.doc() = "pybind11 srt plugin";
 
