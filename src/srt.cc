@@ -91,7 +91,7 @@ int mead_cleanup()
     return 0;
 }
 
-int mead_rendezvous(const char* remote_addr, int remote_port, int local_port)
+int mead_rendezvous(const char* remote_addr, int remote_port, const char*  local_addr, int local_port)
 {
     int ss, st;
     struct sockaddr_in lsa;
@@ -116,7 +116,7 @@ int mead_rendezvous(const char* remote_addr, int remote_port, int local_port)
     printf("srt bind address\n");
     lsa.sin_family = AF_INET;
     lsa.sin_port = htons(remote_port);
-    if (inet_pton(AF_INET, "127.0.0.1", &lsa.sin_addr) != 1)
+    if (inet_pton(AF_INET, local_addr, &lsa.sin_addr) != 1)
     {
         return 1;
     }

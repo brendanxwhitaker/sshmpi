@@ -12,7 +12,7 @@ ExternalProject_Add(project_srt
         UPDATE_COMMAND ""
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/srt
         BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/srt
-        CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/lib/srt/configure --enable-debug=2
+        CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/lib/srt/configure
         GIT_SUBMODULES ""
         BUILD_COMMAND make srt_static
         GIT_PROGRESS 1
