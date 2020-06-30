@@ -12,7 +12,7 @@ ExternalProject_Add(project_srt
         UPDATE_COMMAND ""
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/srt
         BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/srt
-        CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/lib/srt/configure
+        CONFIGURE_COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/lib/srt/configure --enable-debug=2
         GIT_SUBMODULES ""
         BUILD_COMMAND make srt_static
         GIT_PROGRESS 1
@@ -31,3 +31,4 @@ add_subdirectory(lib/pybind11)
 pybind11_add_module(pysrt src/srt.cc)
 add_dependencies(pysrt pybind11::module project_srt)
 target_link_libraries(pysrt PRIVATE pybind11::module srt ${OPENSSL_LIBRARIES} Threads::Threads)
+target_compile_options(pysrt PRIVATE -ggdb)
