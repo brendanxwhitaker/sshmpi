@@ -1,4 +1,5 @@
 __pycache__
+*.pyc
 *.swp
 logs/
 .mypy_cache/
@@ -8,4 +9,6 @@ logs/
 build/
 dist/
 *.log
+pybind11
+srt
 *.so

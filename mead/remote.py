@@ -1,23 +1,33 @@
 """ Starts processes for a remote client. Called by ``meadclient``. """
+import os
 import sys
 import logging
-from typing import Dict
-
 import multiprocessing as mp
+from typing import Dict
 from multiprocessing.connection import Connection
 
+import stun
 import dill
 
 from mead.client import Client
-from mead.classes import _Process, _Join
+from mead.classes import _Join, _Process
 from mead.transport import inject, extract
 from mead.connections import get_remote_connections
 
 
-def remote(server_ip: str, port: int, channel: str) -> None:
+def remote(head_ip: str, port: int, channel: str) -> None:
     """ Runs the client for a remote worker. """
     logging.basicConfig(filename="remote.log", level=logging.DEBUG)
     logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+
+    # Get external IP and port from STUN server.
+    _, external_ip, external_port = stun.get_ip_info(source_port=50000)
+
+    # Write sockaddr to file.
+    sockpath = os.path.abspath(os.path.expanduser("~/.sockaddr.mead"))
+    with open(sockpath, "w") as sockfile:
+        sockfile.write(external_ip + "\n")
+        sockfile.write(str(external_port) + "\n")
 
     # Transport in and out of the head node.
     in_funnel, in_spout = mp.Pipe()
@@ -25,7 +35,7 @@ def remote(server_ip: str, port: int, channel: str) -> None:
     aux_funnel, aux_spout = mp.Pipe()
 
     # Create and start the client.
-    client = Client(server_ip, port, channel, in_funnel, out_queue)
+    client = Client(head_ip, port, channel, in_funnel, out_queue)
     p_client = mp.Process(target=client.main)
     p_client.start()
 
