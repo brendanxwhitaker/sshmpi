@@ -27,6 +27,7 @@ find_package(OpenSSL REQUIRED)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/srt/)
 
 add_subdirectory(lib/pybind11)
+add_subdirectory(lib/srt)
 
 pybind11_add_module(pysrt src/srt.cc)
 add_dependencies(pysrt pybind11::module project_srt)

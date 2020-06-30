@@ -93,6 +93,8 @@ class CMakeBuild(build_ext):
     def build_extension(self, ext):
 
         # Clone the dependencies.
+        if not os.path.isdir("lib/"):
+            os.path.mkdir("lib/")
         for name, url in ext.dependencies.items():
             command = "if cd %s; then git pull; else git clone %s; fi" % (name, url)
             out = subprocess.check_output(command, shell=True, cwd="lib")
