@@ -26,7 +26,7 @@ def main():
     print("peer started.")
     input()
     mead_startup()
-    socket = mead_rendezvous(sys.argv[1], sys.argv[2], 54320, 54320)
+    socket = mead_rendezvous(sys.argv[1], 54320, sys.argv[2], 54320)
     print("socket:", socket)
     mead_sendmsg2(socket, "hi.")
     msg = mead_recvmsg2(socket, 4096)
