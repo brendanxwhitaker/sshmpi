@@ -1,11 +1,10 @@
 """ Functions for construction connection maps between processes and clients. """
-from typing import Tuple, Dict, List, Any
-
 import multiprocessing as mp
+from typing import Any, Dict, List, Tuple
 from multiprocessing.connection import Connection
 
 from mead import cellar
-from mead.classes import _Funnel, _Spout, Funnel, Spout
+from mead.classes import Spout, Funnel, _Spout, _Funnel
 
 
 def get_head_connections(

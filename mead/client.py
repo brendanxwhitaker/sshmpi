@@ -5,10 +5,9 @@ import sys
 import time
 import socket
 import logging
+import multiprocessing as mp
 from typing import Tuple, Callable
 from threading import Thread
-
-import multiprocessing as mp
 from multiprocessing.connection import Connection
 
 from mead.utils import bytes2addr, get_length_message_pair
@@ -22,8 +21,25 @@ SymmetricNAT = "Symmetric NAT"  # 3
 UnknownNAT = "Unknown NAT"  # 4
 NATTYPE = (FullCone, RestrictNAT, RestrictPortNAT, SymmetricNAT, UnknownNAT)
 
+
 class Client:
-    """ The UDP client for interacting with the server and other Clients. """
+    """
+    The UDP client for interacting with the server and other Clients.
+
+    Parameters
+    ----------
+    server_ip : ``str``.
+        The IP address of the rendezvous server.
+    port : ``int``.
+        The UDP port on which the rendezvous server is listening.
+    channel : ``str``.
+        A UUID for communication between two clients on a server. This will
+        typically just be the hostname of the worker node.
+    in_funnel : ``Connection``.
+        Injects received data INTO another running process.
+    outq : ``mp.Queue``.
+        Broadcasts data sent from a running process to some remote node.
+    """
 
     def __init__(
         self,
@@ -31,7 +47,7 @@ class Client:
         port: int,
         channel: str,
         in_funnel: Connection,
-        out_queue: mp.Queue,
+        outq: mp.Queue,
     ) -> None:
         self.master = (server_ip, port)
         self.channel = channel
@@ -42,7 +58,7 @@ class Client:
         self.peer_nat_type = ""
 
         self.in_funnel = in_funnel
-        self.out_queue = out_queue
+        self.outq = outq
 
     def request_for_connection(self, nat_type_id: str = "0") -> None:
         """ Send a request to the server for a connection. """
@@ -50,7 +66,7 @@ class Client:
         self.sockfd = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
         # Send channel and NAT type to server, requesting a connection.
-        msg = (self.channel + " {0}".format(nat_type_id)).encode("ascii")
+        msg = (self.channel + " %s" % nat_type_id).encode("ascii")
         self.sockfd.sendto(msg, self.master)
 
         # Wait for ``ok``, acknowledgement of request.
@@ -75,7 +91,7 @@ class Client:
         addr, port = self.target
         print("connected to %s:%s with NAT type: %s" % (addr, port, self.peer_nat_type))
 
-    def recv_msg(self, sock: socket.socket) -> None:
+    def recvloop(self, sock: socket.socket) -> None:
         """ Receive message callback. """
         while True:
             # Receive 16 bytes (size of length prefix).
@@ -109,10 +125,10 @@ class Client:
 
                 self.in_funnel.send(bdata)
 
-    def send_msg(self, sock: socket.socket) -> None:
+    def sendloop(self, sock: socket.socket) -> None:
         """ Send message callback. """
         while True:
-            obj = self.out_queue.get()
+            obj = self.outq.get()
 
             # Serialize in bytes as a length-message pair.
             pair: bytes = get_length_message_pair(obj)
@@ -137,7 +153,6 @@ class Client:
         tr.setDaemon(True)
         tr.start()
 
-
     def main(self) -> None:
         """ Start a chat session. """
         # Connect to the server and request a channel.
@@ -153,7 +168,7 @@ class Client:
 
         # Chat with peer.
         print("FullCone chat mode")
-        self.chat_fullcone(self.send_msg, self.recv_msg, self.sockfd)
+        self.chat_fullcone(self.sendloop, self.recvloop, self.sockfd)
 
         # Let the threads run.
         while 1:
