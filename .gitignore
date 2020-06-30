@@ -8,3 +8,4 @@ logs/
 build/
 dist/
 *.log
+*.so
