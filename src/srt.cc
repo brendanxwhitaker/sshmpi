@@ -25,7 +25,7 @@
 #include <unistd.h>
 #endif
 
-#include <srt/srt.h>
+#include <srtcore/srt.h>
 #include <pybind11/pybind11.h>
 
 namespace py = pybind11;
@@ -153,7 +153,7 @@ int mead_rendezvous(const char* remote_addr, int remote_port, int local_port)
         return 1;
     }
 
-    return socket;
+    return ss;
 }
 
 PYBIND11_MODULE(pysrt, m) {
