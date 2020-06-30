@@ -1,8 +1,8 @@
+import sys
 import multiprocessing as mp
 from mead.pysrt import (
     mead_startup,
     mead_rendezvous,
-    mead_rendezvous_test,
     mead_sendmsg2,
     mead_recvmsg2,
     mead_close,
@@ -23,26 +23,16 @@ def peer():
 
 
 def main():
-    """
-    q = mp.Process(target=peer, args=())
-    q.start()
-    """
-    p = mp.Process(target=peer, args=())
-    p.start()
-
     print("peer started.")
     input()
     mead_startup()
-    socket = mead_rendezvous_test("76.16.39.133", 50002, 50003)
+    socket = mead_rendezvous(sys.argv[1], sys.argv[2], 54320, 54320)
     print("socket:", socket)
     mead_sendmsg2(socket, "hi.")
     msg = mead_recvmsg2(socket, 4096)
     mead_close(socket)
     mead_cleanup()
     print("msg:", msg)
-
-    p.join()
-    # q.join()
 
 
 if __name__ == "__main__":
