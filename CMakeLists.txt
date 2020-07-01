@@ -1,14 +1,16 @@
 cmake_minimum_required(VERSION 2.8.12)
 set(CMAKE_CXX_STANDARD 17)
 project(mead)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lib)
+execute_process(COMMAND git clone https://github.com/pybind/pybind11.git ${CMAKE_CURRENT_SOURCE_DIR}/lib/pybind11)
+execute_process(COMMAND git clone https://github.com/haivision/srt.git ${CMAKE_CURRENT_SOURCE_DIR}/lib/srt)
 
 find_package(PythonLibs)
 include_directories(${PYTHON_INCLUDE_DIRS})
 
 include(ExternalProject)
 ExternalProject_Add(project_srt
-        GIT_REPOSITORY https://github.com/ethouris/srt.git
-        GIT_TAG dev-fix-attributes
+        GIT_REPOSITORY https://github.com/haivision/srt.git
         UPDATE_COMMAND ""
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/srt
         BINARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib/srt
@@ -26,8 +28,8 @@ find_package (Threads REQUIRED)
 find_package(OpenSSL REQUIRED)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/lib/srt/)
 
-add_subdirectory(lib/pybind11)
-add_subdirectory(lib/srt)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/pybind11)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib/srt)
 
 pybind11_add_module(pysrt src/srt.cc)
 add_dependencies(pysrt pybind11::module project_srt)
